@@ -11,13 +11,13 @@ from can_log_analysis.errors import (
     CanLogAnalysisError, LogNotFoundError, LogReadCancelled, LogReadError, ProjectNotFoundError, ProjectReadError)
 from can_log_analysis.formatting import can_id_text, ecu_name, fixed1, period_text
 from can_log_analysis.log_reader import LogRecords, read_log_records
-from can_log_analysis.project import Project, open_project
+from can_log_analysis.project import EcuInfo, FrameInfo, Project, ProjectContents, open_project, read_project_contents
 from can_log_analysis.stats import Histogram, Stats, make_histogram
 from can_log_analysis.tables import (
     Table, bus_load_table, jitter_table, latency_table, tx_wait_table, write_table_csv)
 
 __all__ = [
-    "open_project", "Project",
+    "open_project", "Project", "read_project_contents", "ProjectContents", "EcuInfo", "FrameInfo",
     "read_log_records", "LogRecords",
     "analyze_latency", "analyze_tx_wait", "analyze_jitter", "analyze_bus_load", "collect_transmissions",
     "LatencyAnalysis", "LatencyRow", "TxWaitAnalysis", "TxWaitRow", "JitterAnalysis", "JitterRow", "JitterPoint",

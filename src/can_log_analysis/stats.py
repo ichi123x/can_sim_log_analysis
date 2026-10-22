@@ -1,5 +1,6 @@
 """統計量（MFC ComputeStats。FR-012、AR-042）。"""
 
+import bisect
 import math
 from array import array
 from dataclasses import dataclass, field
@@ -74,8 +75,7 @@ def make_histogram(sorted_values) -> Histogram:
     h.width_us = max(1, _llround(nice_ceil(float(hi - lo) / target)))
     h.start_us = (lo // h.width_us) * h.width_us  # floor division, also for negative values
     bins = (hi - h.start_us) // h.width_us + 1
-    counts = [0] * bins
-    for v in sorted_values:
-        counts[(v - h.start_us) // h.width_us] += 1
-    h.counts = counts
+    # The values are ascending, so each bin is counted by finding its edges (at most 50 bins; research R-5 of 002)
+    edges = [bisect.bisect_left(sorted_values, h.start_us + i * h.width_us) for i in range(bins + 1)]
+    h.counts = [edges[i + 1] - edges[i] for i in range(bins)]
     return h

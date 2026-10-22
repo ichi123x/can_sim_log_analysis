@@ -1,0 +1,140 @@
+"""解析画面（FR-005、FR-011、FR-020〜FR-025、FR-030〜FR-032、SC-001、contracts/gui.md「解析画面」）。"""
+
+from PySide6.QtCore import QPoint, QRect, QSize, Qt
+
+from can_log_analysis_gui.analysis_window import place_window
+from can_log_analysis_gui.graph import Bars, NoData
+
+from conftest import DATA_DIR
+
+SAMPLE = DATA_DIR / "sample_vehicle_16ecu" / "sample_vehicle_16ecu.canprj"
+AS001 = DATA_DIR / "as001" / "as001.canprj"
+
+
+def open_and_run(main_window, dialogs, wait_window, project, kind):
+    dialogs.project_path = project
+    main_window.actions["load"].trigger()
+    main_window.actions[kind].trigger()
+    return wait_window(main_window, kind)
+
+
+def table_cells(w):
+    t = w.table_widget
+    return [[t.item(r, c).text() for c in range(t.columnCount())] for r in range(t.rowCount())]
+
+
+def headers(w):
+    t = w.table_widget
+    return [t.horizontalHeaderItem(c).text() for c in range(t.columnCount())]
+
+
+# ---- 送信待ち時間（US1） ----
+
+def test_txwait_table_matches_golden_sc001(main_window, dialogs, wait_window, golden):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
+    title, note, columns, rows = golden("sample_vehicle_16ecu", "txwait")
+    assert w.windowTitle() == title == "送信待ち時間 - sample_vehicle_16ecu.canprj"
+    assert w.note_label.text() == note
+    assert headers(w) == columns
+    assert table_cells(w) == rows
+    assert len(rows) == 32
+
+
+def test_txwait_columns_fr024(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
+    t = w.table_widget
+    assert [t.columnWidth(c) for c in range(7)] == [90, 90, 80, 100, 100, 100, 100]
+    for c in range(7):
+        right = bool(t.item(1, c).textAlignment() & Qt.AlignRight)
+        assert right == (c >= 2), c
+    assert t.selectionMode() == t.SelectionMode.SingleSelection
+    assert t.selectionBehavior() == t.SelectionBehavior.SelectRows
+
+
+def test_first_row_selected_with_its_histogram_fr031(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
+    assert w.selected_row() == 0
+    content = w.graph.content()
+    assert isinstance(content, Bars)
+    assert sum(content.histogram.counts) == 4015
+    assert (content.x_label, content.y_label) == ("時間 (µs)", "件数")
+
+
+def test_selecting_a_row_changes_the_graph_fr031(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
+    row = [r[0] for r in table_cells(w)].index("0x1A0")
+    w.table_widget.selectRow(row)
+    content = w.graph.content()
+    assert (content.histogram.start_us, content.histogram.width_us, content.histogram.counts) == (0, 1, [50])
+
+
+def test_empty_all_row_has_no_data(qtbot, main_window, dialogs, wait_window, make_project):
+    project = make_project([])  # header only
+    w = open_and_run(main_window, dialogs, wait_window, project, "txwait")
+    assert isinstance(w.graph.content(), NoData)
+    assert w.graph.content().text == "データがありません"
+
+
+def test_choosing_the_same_analysis_again_raises_it_fr011(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
+    main_window.actions["txwait"].trigger()
+    assert main_window.job is None  # no new analysis
+    assert list(main_window.windows) == ["txwait"]
+    assert main_window.windows["txwait"] is w
+
+
+def test_escape_closes_enter_does_not_fr023(qtbot, main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
+    qtbot.keyClick(w, Qt.Key_Return)
+    assert w.isVisible()
+    qtbot.keyClick(w, Qt.Key_Escape)
+    qtbot.waitUntil(lambda: "txwait" not in main_window.windows)
+
+
+def test_opening_another_project_closes_the_windows_fr005(qtbot, main_window, dialogs, wait_window):
+    open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
+    dialogs.project_path = AS001
+    main_window.actions["load"].trigger()
+    qtbot.waitUntil(lambda: not main_window.windows)
+
+
+def test_sizes_include_the_frame_fr022(qtbot, main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
+    assert w.frameGeometry().size() == QSize(900, 640)
+    w.resize(10, 10)  # below the minimum
+    qtbot.waitUntil(lambda: w.frameGeometry().size() == QSize(520, 400))
+
+
+def test_layout_list_note_graph_fr030(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
+    width, height = w.rect().width(), w.rect().height()
+    inner = max(0, height - 2 * 8 - 22 - 8)
+    list_h = inner * 2 // 5
+    assert w.table_widget.geometry() == QRect(8, 8, width - 16, list_h)
+    note_top = 8 + list_h + 4
+    assert w.note_label.geometry() == QRect(8, note_top, width - 16, 22)
+    graph_top = note_top + 22 + 4
+    assert w.graph.geometry() == QRect(8, graph_top, width - 16, height - 8 - graph_top)
+
+
+def test_place_window_centres_on_the_owner_fr022():
+    owner = QRect(100, 100, 1200, 800)
+    work = QRect(0, 0, 1920, 1040)
+    rect = place_window(QSize(900, 640), owner, work)
+    assert rect.size() == QSize(900, 640)
+    assert abs(rect.center().x() - owner.center().x()) <= 1 and abs(rect.center().y() - owner.center().y()) <= 1
+
+
+def test_place_window_keeps_inside_the_work_area_fr022():
+    work = QRect(0, 0, 1920, 1040)
+    rect = place_window(QSize(900, 640), QRect(1500, 800, 400, 200), work)  # owner near the bottom right
+    assert work.contains(rect)
+    assert (rect.right(), rect.bottom()) == (work.right(), work.bottom())
+    rect = place_window(QSize(900, 640), QRect(-300, -200, 400, 200), work)  # near the top left
+    assert rect.topLeft() == QPoint(0, 0)
+
+
+def test_window_is_placed_by_place_window(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
+    expected = place_window(QSize(900, 640), main_window.frameGeometry(), w.screen().availableGeometry())
+    assert w.frameGeometry().topLeft() == expected.topLeft()
