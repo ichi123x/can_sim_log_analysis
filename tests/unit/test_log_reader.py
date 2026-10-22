@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from can_log_analysis.errors import LogNotFoundError, LogReadError
+from can_log_analysis.errors import LogNotFoundError, LogReadCancelled, LogReadError
 from can_log_analysis.log_reader import OVERWRITE, RETRY_SUCCESS, SUCCESS, read_log_records
 
 from conftest import DATA_DIR, DEFAULT_HEADER, log_row, write_text
@@ -161,3 +161,45 @@ def test_accepts_str_path():
 def test_sample_vehicle_row_count():
     path = DATA_DIR / "sample_vehicle_16ecu" / "sample_vehicle_16ecu.canprj.log.csv"
     assert len(read_log_records(Path(path))) == 16080
+
+
+# ---- 進捗と中止（FR-007、US5） ----
+
+FOUR_MB = 4 * 1024 * 1024
+
+
+def big_log(tmp_path, size):
+    row = log_row().encode() + b"\n"
+    path = tmp_path / "big.log.csv"
+    with open(path, "wb") as f:
+        f.write(DEFAULT_HEADER.encode() + b"\n")
+        f.write(row * (size // len(row) + 1))
+    return path
+
+
+def test_progress_every_4mb_and_at_the_end_fr007(tmp_path):
+    path = big_log(tmp_path, 9 * 1024 * 1024)
+    total = path.stat().st_size
+    calls = []
+    records = read_log_records(path, progress=lambda done, size: calls.append((done, size)) or True)
+    assert calls == [(FOUR_MB, total), (2 * FOUR_MB, total), (total, total)]
+    assert len(records) > 0
+
+
+def test_progress_called_once_for_a_small_log(tmp_path):
+    path = DATA_DIR / "as001" / "as001.canprj.log.csv"
+    calls = []
+    read_log_records(path, progress=lambda done, size: calls.append((done, size)) or True)
+    size = path.stat().st_size
+    assert calls == [(size, size)]
+
+
+def test_cancel_fr007(tmp_path):
+    path = big_log(tmp_path, 9 * 1024 * 1024)
+    with pytest.raises(LogReadCancelled):
+        read_log_records(path, progress=lambda done, size: False)
+
+
+def test_cancel_at_the_last_call(tmp_path):
+    with pytest.raises(LogReadCancelled):
+        read_log_records(DATA_DIR / "as001" / "as001.canprj.log.csv", progress=lambda done, size: False)

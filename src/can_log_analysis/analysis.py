@@ -3,6 +3,7 @@
 関数は MFC と 1 対 1 に対応させ、条件・並び順・浮動小数点の計算順を合わせる（research.md R-4、R-5）。
 """
 
+import math
 from array import array
 from dataclasses import dataclass, field
 
@@ -122,3 +123,146 @@ def analyze_tx_wait(records: LogRecords) -> TxWaitAnalysis:
     for can_id, node, values in ids:
         rows.append(TxWaitRow(can_id=can_id, tx_node=node, stats=compute_stats(values)))
     return TxWaitAnalysis(rows=rows, overwrite_count=overwrites)
+
+# ---- 送信ジッタ ----
+
+@dataclass(frozen=True)
+class JitterPoint:
+    time_us: int       # Tx_Start of the later transmission
+    deviation_us: int  # start interval - request interval (+ late, - early)
+
+
+@dataclass
+class JitterRow:
+    can_id: int = 0
+    tx_node: int = 0
+    period_us: int = 0      # the most frequent request interval (the smaller on a tie); 0 if sent once
+    count: int = 0          # transmissions - 1
+    min_us: int = 0
+    max_us: int = 0
+    std_dev_us: float = 0.0  # population standard deviation
+    points: list[JitterPoint] = field(default_factory=list)  # by time
+
+
+@dataclass
+class JitterAnalysis:
+    rows: list[JitterRow]  # CAN ID ascending
+
+
+def analyze_jitter(records: LogRecords) -> JitterAnalysis:
+    """CAN ID ごとに (Start[k] - Start[k-1]) - (Request[k] - Request[k-1])。MFC AnalyzeJitter。"""
+    transmissions, _ = collect_transmissions(records)
+    rows = []
+    begin = 0
+    n = len(transmissions)
+    while begin < n:
+        end = begin
+        while end < n and transmissions[end].can_id == transmissions[begin].can_id:
+            end += 1
+        row = JitterRow(can_id=transmissions[begin].can_id, tx_node=transmissions[begin].tx_node)
+        intervals: dict[int, int] = {}  # request interval -> how often
+        for k in range(begin + 1, end):
+            prev, cur = transmissions[k - 1], transmissions[k]
+            request_interval = cur.tx_request - prev.tx_request
+            row.points.append(JitterPoint(cur.tx_start, (cur.tx_start - prev.tx_start) - request_interval))
+            intervals[request_interval] = intervals.get(request_interval, 0) + 1
+        row.count = len(row.points)
+        if row.count > 0:
+            best = 0
+            for interval, times in sorted(intervals.items()):  # ascending, so a tie keeps the smaller interval
+                if times > best:
+                    best = times
+                    row.period_us = interval
+            deviations = [p.deviation_us for p in row.points]
+            row.min_us = min(deviations)
+            row.max_us = max(deviations)
+            # The same order of double operations as MFC (research.md R-4): no fsum, no statistics
+            mean = float(sum(deviations)) / row.count
+            squares = 0.0
+            for v in deviations:
+                d = float(v) - mean
+                squares += d * d
+            row.std_dev_us = math.sqrt(squares / row.count)  # population, as the summary CSV
+        rows.append(row)
+        begin = end
+    return JitterAnalysis(rows=rows)
+
+# ---- CAN バス負荷 ----
+
+@dataclass
+class EcuBusUsage:
+    node: int = 0
+    frame_count: int = 0
+    busy_us: int = 0
+    usage_pct: float = 0.0  # busy_us / range_us
+
+
+@dataclass
+class BusLoadAnalysis:
+    section_us: int = 10000
+    range_us: int = 10000  # 0 .. the section holding the last Tx_End
+    section_pct: list[float] = field(default_factory=list)
+    average_pct: float = 0.0  # busy time / range_us
+    max_pct: float = 0.0
+    max_section: int = 0      # first section with max_pct
+    ecus: list[EcuBusUsage] = field(default_factory=list)  # senders only, by node number
+    transmission_count: int = 0
+
+
+def analyze_bus_load(records: LogRecords) -> BusLoadAnalysis:
+    """送信ごと（(Tx_Node, CAN_ID, Tx_Start) で 1 回）に、バスは [Tx_Start, Tx_End) の間使用中。MFC AnalyzeBusLoad。
+
+    条件は collect_transmissions と違う: Tx_Request は見ず、Tx_End > Tx_Start の送信だけ（research.md R-5）。
+    """
+    result = BusLoadAnalysis()
+    seen = set()
+    transmissions = []  # (tx_node, tx_start, tx_end) of the first row of each transmission
+    last_end = 0
+    status, tx_node, can_id = records.status, records.tx_node, records.can_id
+    tx_start, tx_end = records.tx_start, records.tx_end
+    for i in range(len(records)):
+        start = tx_start[i]
+        end = tx_end[i]
+        if status[i] == OVERWRITE or start < 0 or end <= start:
+            continue
+        key = (tx_node[i], can_id[i], start)
+        if key in seen:
+            continue  # the same transmission seen by another receiver
+        seen.add(key)
+        transmissions.append((tx_node[i], start, end))
+        last_end = max(last_end, end)
+    result.transmission_count = len(transmissions)
+
+    section = result.section_us
+    result.range_us = section if last_end <= 0 else ((last_end + section - 1) // section) * section
+    busy = [0] * (result.range_us // section)
+    ecus: dict[int, EcuBusUsage] = {}
+    total = 0
+    for node, start, end in transmissions:
+        t = start
+        while t < end:
+            index = t // section
+            stop = min(end, (index + 1) * section)
+            busy[index] += stop - t
+            t = stop
+        duration = end - start
+        total += duration
+        e = ecus.get(node)
+        if e is None:
+            e = ecus[node] = EcuBusUsage(node=node)
+        e.frame_count += 1
+        e.busy_us += duration
+
+    for i, b in enumerate(busy):
+        pct = 100.0 * float(b) / float(section)
+        result.section_pct.append(pct)
+        if pct > result.max_pct:
+            result.max_pct = pct
+            result.max_section = i
+    range_us = float(result.range_us)
+    result.average_pct = 100.0 * float(total) / range_us
+    for node in sorted(ecus):
+        e = ecus[node]
+        e.usage_pct = 100.0 * float(e.busy_us) / range_us
+        result.ecus.append(e)
+    return result

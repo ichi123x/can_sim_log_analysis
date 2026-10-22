@@ -41,3 +41,12 @@ def integer(value: int) -> str:
 def columns(rc_columns: str) -> list[str]:
     """MFC CreateList の列見出し（'|' 区切り）を列のリストにする。"""
     return rc_columns.split("|")
+
+
+def period_text(period_us: int) -> str:
+    """周期 (ms)。MFC CJitterDlg: PeriodUs % 1000 == 0 なら "%lld"（PeriodUs / 1000）、それ以外は "%.3f"。
+    C++ の整数除算は 0 方向への切り捨てなので、負の周期でもそれに合わせる。"""
+    if period_us % 1000 == 0:
+        ms = abs(period_us) // 1000
+        return "%d" % (ms if period_us >= 0 else -ms)
+    return "%.3f" % (period_us / 1000.0)

@@ -119,16 +119,16 @@ description: "CANログ解析コアとコマンドライン の実装タスク"
 
 ### Tests for User Story 2（先に書いて失敗を確認する）
 
-- [ ] T037 [P] [US2] `tests/unit/test_jitter.py` を書く（FR-026〜FR-028、AR-070〜AR-072）: 送信要求 0, 10000, 20000 と送信開始 0, 10100, 20000 で、period_us 10000、count 2、min −100、max 100、std_dev 100.0、points が [(10100, 100), (20000, −100)]。送信 1 回の ID は count 0、period_us 0、min/max 0、std_dev 0.0。要求間隔 10000 と 12500 が同数なら 10000。行は can_id 昇順。受信ノードの数だけ並ぶ行が 1 回にまとめられる。OVERWRITE で抜けた送信は、要求間隔が広がるだけでジッタに数えない。標準偏差は「`mean = float(sum) / n` のあと、時系列順に `d = float(v) - mean; squares += d * d`、`math.sqrt(squares / n)`」と同じ値（`statistics.pstdev` と最後の桁が違う例があればそれも入れる）
-- [ ] T038 [P] [US2] `tests/unit/test_formatting.py` に `period_text` のテストを足す: 10000 → `"10"`、12500 → `"12.500"`、1 → `"0.001"`、0 → `"0"`、−2000 → `"-2"`、−2500 → `"-2.500"`（剰余と除算は C++ と同じく 0 方向。research.md R-4）
-- [ ] T039 [P] [US2] `tests/unit/test_tables.py` に jitter の表のテストを足す: 表題 `送信ジッター - <P>`、注記は IDS_JIT_NOTE、count 0 の行は「CanIdText, EcuName, ``, `0`, ``, ``, ``」
-- [ ] T040 [P] [US2] `tests/integration/test_golden.py` と `tests/integration/test_cli.py` に kind `jitter` を足す（-a jitter、all のときの順序）
+- [X] T037 [P] [US2] `tests/unit/test_jitter.py` を書く（FR-026〜FR-028、AR-070〜AR-072）: 送信要求 0, 10000, 20000 と送信開始 0, 10100, 20000 で、period_us 10000、count 2、min −100、max 100、std_dev 100.0、points が [(10100, 100), (20000, −100)]。送信 1 回の ID は count 0、period_us 0、min/max 0、std_dev 0.0。要求間隔 10000 と 12500 が同数なら 10000。行は can_id 昇順。受信ノードの数だけ並ぶ行が 1 回にまとめられる。OVERWRITE で抜けた送信は、要求間隔が広がるだけでジッタに数えない。標準偏差は「`mean = float(sum) / n` のあと、時系列順に `d = float(v) - mean; squares += d * d`、`math.sqrt(squares / n)`」と同じ値（`statistics.pstdev` と最後の桁が違う例があればそれも入れる）
+- [X] T038 [P] [US2] `tests/unit/test_formatting.py` に `period_text` のテストを足す: 10000 → `"10"`、12500 → `"12.500"`、1 → `"0.001"`、0 → `"0"`、−2000 → `"-2"`、−2500 → `"-2.500"`（剰余と除算は C++ と同じく 0 方向。research.md R-4）
+- [X] T039 [P] [US2] `tests/unit/test_tables.py` に jitter の表のテストを足す: 表題 `送信ジッター - <P>`、注記は IDS_JIT_NOTE、count 0 の行は「CanIdText, EcuName, ``, `0`, ``, ``, ``」
+- [X] T040 [P] [US2] `tests/integration/test_golden.py` と `tests/integration/test_cli.py` に kind `jitter` を足す（-a jitter、all のときの順序）
 
 ### Implementation for User Story 2
 
-- [ ] T041 [US2] `src/can_log_analysis/analysis.py` に `JitterPoint`、`JitterRow`、`JitterAnalysis` と `analyze_jitter(records)` を実装する（MFC `AnalyzeJitter`）。period_us は「送信要求の間隔の最頻値（同数なら小さいほう）。送信 1 回なら 0」、count は「送信回数 − 1」、std_dev は research.md R-4 の順序で計算。T037 を通す
-- [ ] T042 [US2] `src/can_log_analysis/formatting.py` に `period_text(period_us)` を実装する（C++ と同じ 0 方向の剰余・除算）。T038 を通す
-- [ ] T043 [US2] `src/can_log_analysis/tables.py` に `jitter_table(a, project_name)` を実装し、`src/can_log_analysis/cli.py` に kind `jitter` を足す。T039、T040 を通す
+- [X] T041 [US2] `src/can_log_analysis/analysis.py` に `JitterPoint`、`JitterRow`、`JitterAnalysis` と `analyze_jitter(records)` を実装する（MFC `AnalyzeJitter`）。period_us は「送信要求の間隔の最頻値（同数なら小さいほう）。送信 1 回なら 0」、count は「送信回数 − 1」、std_dev は research.md R-4 の順序で計算。T037 を通す
+- [X] T042 [US2] `src/can_log_analysis/formatting.py` に `period_text(period_us)` を実装する（C++ と同じ 0 方向の剰余・除算）。T038 を通す
+- [X] T043 [US2] `src/can_log_analysis/tables.py` に `jitter_table(a, project_name)` を実装し、`src/can_log_analysis/cli.py` に kind `jitter` を足す。T039、T040 を通す
 
 **Checkpoint**: US1 と US2 がそれぞれ動く
 
@@ -142,14 +142,14 @@ description: "CANログ解析コアとコマンドライン の実装タスク"
 
 ### Tests for User Story 3（先に書いて失敗を確認する）
 
-- [ ] T044 [P] [US3] `tests/unit/test_bus_load.py` を書く（FR-031〜FR-035、AR-080〜AR-083）: AS-001 で range_us 10010000、transmission_count 2、ecus が ECU 01（frame_count 1）と ECU 03（frame_count 1）。9990〜10010 µs の 1 送信で section_pct[0] と [1] にそれぞれ 10 µs 分（0.1）。送信なし（ヘッダだけ）で range_us 10000、average_pct 0.0、max_pct 0.0、max_section 0、ecus 空。Tx_End ≦ Tx_Start と Tx_Start < 0 の行は除き、Tx_Request −1 の行は含む（CollectTransmissions と条件が違う。research.md R-5）。同じ最大値の区間が 2 つあれば最初のほう。重複のまとめはキー (tx_node, can_id, tx_start) で最初の行の tx_end を使う。負荷率は `100.0 * busy / section_us`、使用率は `100.0 * busy_us / range_us` の順で計算
-- [ ] T045 [P] [US3] `tests/unit/test_tables.py` に busload の表のテストを足す: 表題 `CAN バス負荷 - <P>`、2 行目の要約 `平均負荷 <A>%　最大負荷 <M>%（<S>〜<E> ms）　範囲 0〜<R> ms（10 ms ごと）`（全角スペース U+3000、〜 U+301C、S = max_section × 10、E = (max_section + 1) × 10、R = range_us // 1000）、列 `ECU,送信フレーム数,使用率 (%)`
-- [ ] T046 [P] [US3] `tests/integration/test_golden.py` と `tests/integration/test_cli.py` に kind `busload` を足す（-a busload、all のときの順序 latency → busload → txwait → jitter）
+- [X] T044 [P] [US3] `tests/unit/test_bus_load.py` を書く（FR-031〜FR-035、AR-080〜AR-083）: AS-001 で range_us 10010000、transmission_count 2、ecus が ECU 01（frame_count 1）と ECU 03（frame_count 1）。9990〜10010 µs の 1 送信で section_pct[0] と [1] にそれぞれ 10 µs 分（0.1）。送信なし（ヘッダだけ）で range_us 10000、average_pct 0.0、max_pct 0.0、max_section 0、ecus 空。Tx_End ≦ Tx_Start と Tx_Start < 0 の行は除き、Tx_Request −1 の行は含む（CollectTransmissions と条件が違う。research.md R-5）。同じ最大値の区間が 2 つあれば最初のほう。重複のまとめはキー (tx_node, can_id, tx_start) で最初の行の tx_end を使う。負荷率は `100.0 * busy / section_us`、使用率は `100.0 * busy_us / range_us` の順で計算
+- [X] T045 [P] [US3] `tests/unit/test_tables.py` に busload の表のテストを足す: 表題 `CAN バス負荷 - <P>`、2 行目の要約 `平均負荷 <A>%　最大負荷 <M>%（<S>〜<E> ms）　範囲 0〜<R> ms（10 ms ごと）`（全角スペース U+3000、〜 U+301C、S = max_section × 10、E = (max_section + 1) × 10、R = range_us // 1000）、列 `ECU,送信フレーム数,使用率 (%)`
+- [X] T046 [P] [US3] `tests/integration/test_golden.py` と `tests/integration/test_cli.py` に kind `busload` を足す（-a busload、all のときの順序 latency → busload → txwait → jitter）
 
 ### Implementation for User Story 3
 
-- [ ] T047 [US3] `src/can_log_analysis/analysis.py` に `EcuBusUsage`、`BusLoadAnalysis` と `analyze_bus_load(records)` を実装する（MFC `AnalyzeBusLoad`）。section_us は「10000 固定」、range_us は「送信がなければ 10000、あれば ceil(最後の tx_end / 10000) × 10000」、max_section は「最大の負荷率と、それが最初に現れた区間（0 始まり）。全部 0 なら 0.0 / 0」、ecus は「送信したノードだけ、ノード番号順」。T044 を通す
-- [ ] T048 [US3] `src/can_log_analysis/tables.py` に `bus_load_table(a, project_name)` を実装し、`src/can_log_analysis/cli.py` に kind `busload` を足す。T045、T046 を通す
+- [X] T047 [US3] `src/can_log_analysis/analysis.py` に `EcuBusUsage`、`BusLoadAnalysis` と `analyze_bus_load(records)` を実装する（MFC `AnalyzeBusLoad`）。section_us は「10000 固定」、range_us は「送信がなければ 10000、あれば ceil(最後の tx_end / 10000) × 10000」、max_section は「最大の負荷率と、それが最初に現れた区間（0 始まり）。全部 0 なら 0.0 / 0」、ecus は「送信したノードだけ、ノード番号順」。T044 を通す
+- [X] T048 [US3] `src/can_log_analysis/tables.py` に `bus_load_table(a, project_name)` を実装し、`src/can_log_analysis/cli.py` に kind `busload` を足す。T045、T046 を通す
 
 **Checkpoint**: 4 つの表すべてが MFC と一致
 
@@ -163,12 +163,12 @@ description: "CANログ解析コアとコマンドライン の実装タスク"
 
 ### Tests for User Story 4（先に書いて失敗を確認する）
 
-- [ ] T049 [P] [US4] 不正入力のデータを作る: `tests/data/errors/` に、`no_status_column.canprj`（ヘッダに Status がない）、`bad_number.canprj`（5 行目の Tx_Start が `12a`）、`bad_can_id.canprj`、`bad_status.canprj`、`too_few_columns.canprj`、`empty_log.canprj`（0 バイトのログ）、`no_log.canprj`（.log.csv なし）、`bad_project.canprj`（INI として読めない）。各 .canprj は `[Project]\nEcuCount=1\n`（bad_project を除く）。UTF-8・LF
-- [ ] T050 [P] [US4] `tests/integration/test_cli_errors.py` を書く（contracts/cli.md「出力と終了コード」、SC-004）: 各データで終了コード 1、標準出力は空、標準エラーは 1 行で、`<ログのパス>: line 1: no column Status`、`…: line 5: bad number`、`プロジェクト「no_log.canprj」のシミュレーションログはありません。`、`プロジェクトファイルがありません: <PROJECT>`、`プロジェクトファイルを読めません: <PROJECT>: <理由>` の形。`-o tmp` を付けて失敗したとき、ファイルが 1 つもできない。存在しない `-a foo` で終了コード 2。出力先に書けない（`-o` に既存のファイルを指定）とき `出力できません: <パス>: <理由>` と終了コード 1
+- [X] T049 [P] [US4] 不正入力のデータを作る: `tests/data/errors/` に、`no_status_column.canprj`（ヘッダに Status がない）、`bad_number.canprj`（5 行目の Tx_Start が `12a`）、`bad_can_id.canprj`、`bad_status.canprj`、`too_few_columns.canprj`、`empty_log.canprj`（0 バイトのログ）、`no_log.canprj`（.log.csv なし）、`bad_project.canprj`（INI として読めない）。各 .canprj は `[Project]\nEcuCount=1\n`（bad_project を除く）。UTF-8・LF
+- [X] T050 [P] [US4] `tests/integration/test_cli_errors.py` を書く（contracts/cli.md「出力と終了コード」、SC-004）: 各データで終了コード 1、標準出力は空、標準エラーは 1 行で、`<ログのパス>: line 1: no column Status`、`…: line 5: bad number`、`プロジェクト「no_log.canprj」のシミュレーションログはありません。`、`プロジェクトファイルがありません: <PROJECT>`、`プロジェクトファイルを読めません: <PROJECT>: <理由>` の形。`-o tmp` を付けて失敗したとき、ファイルが 1 つもできない。存在しない `-a foo` で終了コード 2。出力先に書けない（`-o` に既存のファイルを指定）とき `出力できません: <パス>: <理由>` と終了コード 1
 
 ### Implementation for User Story 4
 
-- [ ] T051 [US4] `src/can_log_analysis/cli.py` で `CanLogAnalysisError` の各例外を contracts/cli.md の文言に変えて標準エラーに 1 行で出し、終了コード 1 を返す。`OSError`（出力先）は `出力できません: <パス>: <理由>`。読み込み・解析・表の作成をすべて終えてから書き出すことで、失敗時に部分的なファイルを残さない。T050 を通す
+- [X] T051 [US4] `src/can_log_analysis/cli.py` で `CanLogAnalysisError` の各例外を contracts/cli.md の文言に変えて標準エラーに 1 行で出し、終了コード 1 を返す。`OSError`（出力先）は `出力できません: <パス>: <理由>`。読み込み・解析・表の作成をすべて終えてから書き出すことで、失敗時に部分的なファイルを残さない。T050 を通す
 
 **Checkpoint**: 不正入力で誤った表を出さない
 
@@ -182,15 +182,15 @@ description: "CANログ解析コアとコマンドライン の実装タスク"
 
 ### Tests for User Story 5（先に書いて失敗を確認する）
 
-- [ ] T052 [P] [US5] `tests/unit/test_histogram.py` を書く（AR-043、FR-013）: 値 0〜99 の 100 件で width 10、start 0、10 本 × 10 件。[246, 246, 246] で start 246、width 1、counts [3]。空で counts 空。負の値（−15〜+15）で start が負方向に切り捨て（floor）。n が大きいとき目安が 50 本で頭打ち（0〜9999 の 10000 件: ceil(√10000) = 100 → 50 本に抑えられ、9999 / 50 = 199.98 → 幅 200、start 0、ビン 50 本 × 200 件。2500 件は √ = 50 ちょうどで上限が効いているか確かめられないので使わない）。幅が 1・2・5 × 10^m になる例（0 と 37 を含む 20 件 → 目安 10 本 → 3.7 → 幅 5）。各ビンの件数の合計 == n
-- [ ] T053 [P] [US5] `tests/unit/test_log_reader.py` に進捗・中止のテストを足す（FR-007）: 4 MB を超えるログ（テスト中に一時フォルダへ生成）で progress が「4 MB 読むごと（最後の塊を除く）と、読み終えたときに 1 回」呼ばれ、引数が (読んだバイト数, 全体のバイト数) で、最後は両者が等しい。途中で False を返すと `LogReadCancelled` が出る。小さなログでも最後の 1 回は呼ばれる。あわせて `tests/integration/test_cli_progress.py` を書く（FR-042〜FR-044、contracts/cli.md「進捗」）: `cli._now` を monkeypatch して 0.5 秒を超えた状態にすると、標準エラーに `ログを読み込んでいます... 100%` と `集計しています...` が出て、標準出力は進捗なしの場合と 1 文字も違わない（`-o` のファイルも同じ）。0.5 秒以内なら標準エラーは空。`--quiet`（`-q`）なら 0.5 秒を超えても標準エラーは空。標準エラーが端末でないとき進捗は 1 回 1 行（LF）。N% は前回と同じ値なら出さない。`read_log_records`（または解析関数）を monkeypatch して `KeyboardInterrupt` を出すと、終了コード 130、標準エラーの最後の行が `中断しました。`、標準出力は空、`-o` のディレクトリにファイルが 1 つもできない（読み込み中と計算中の 2 通り）
-- [ ] T054 [P] [US5] `tests/unit/test_core_api.py` を書く: `can_log_analysis` から contracts/core-api.md の公開名（`open_project`、`read_log_records`、`analyze_latency`、`analyze_tx_wait`、`analyze_jitter`、`analyze_bus_load`、`collect_transmissions`、`make_histogram`、`latency_table`、`bus_load_table`、`tx_wait_table`、`jitter_table`、`ecu_name`、`can_id_text`、`fixed1`、`period_text`、`write_table_csv`、例外クラス）を import できる。`JitterRow.points` と `BusLoadAnalysis.section_pct` が取り出せる（FR-030、FR-033）。解析関数が records を変更しない
+- [X] T052 [P] [US5] `tests/unit/test_histogram.py` を書く（AR-043、FR-013）: 値 0〜99 の 100 件で width 10、start 0、10 本 × 10 件。[246, 246, 246] で start 246、width 1、counts [3]。空で counts 空。負の値（−15〜+15）で start が負方向に切り捨て（floor）。n が大きいとき目安が 50 本で頭打ち（0〜9999 の 10000 件: ceil(√10000) = 100 → 50 本に抑えられ、9999 / 50 = 199.98 → 幅 200、start 0、ビン 50 本 × 200 件。2500 件は √ = 50 ちょうどで上限が効いているか確かめられないので使わない）。幅が 1・2・5 × 10^m になる例（0 と 37 を含む 20 件 → 目安 10 本 → 3.7 → 幅 5）。各ビンの件数の合計 == n
+- [X] T053 [P] [US5] `tests/unit/test_log_reader.py` に進捗・中止のテストを足す（FR-007）: 4 MB を超えるログ（テスト中に一時フォルダへ生成）で progress が「4 MB 読むごと（最後の塊を除く）と、読み終えたときに 1 回」呼ばれ、引数が (読んだバイト数, 全体のバイト数) で、最後は両者が等しい。途中で False を返すと `LogReadCancelled` が出る。小さなログでも最後の 1 回は呼ばれる。あわせて `tests/integration/test_cli_progress.py` を書く（FR-042〜FR-044、contracts/cli.md「進捗」）: `cli._now` を monkeypatch して 0.5 秒を超えた状態にすると、標準エラーに `ログを読み込んでいます... 100%` と `集計しています...` が出て、標準出力は進捗なしの場合と 1 文字も違わない（`-o` のファイルも同じ）。0.5 秒以内なら標準エラーは空。`--quiet`（`-q`）なら 0.5 秒を超えても標準エラーは空。標準エラーが端末でないとき進捗は 1 回 1 行（LF）。N% は前回と同じ値なら出さない。`read_log_records`（または解析関数）を monkeypatch して `KeyboardInterrupt` を出すと、終了コード 130、標準エラーの最後の行が `中断しました。`、標準出力は空、`-o` のディレクトリにファイルが 1 つもできない（読み込み中と計算中の 2 通り）
+- [X] T054 [P] [US5] `tests/unit/test_core_api.py` を書く: `can_log_analysis` から contracts/core-api.md の公開名（`open_project`、`read_log_records`、`analyze_latency`、`analyze_tx_wait`、`analyze_jitter`、`analyze_bus_load`、`collect_transmissions`、`make_histogram`、`latency_table`、`bus_load_table`、`tx_wait_table`、`jitter_table`、`ecu_name`、`can_id_text`、`fixed1`、`period_text`、`write_table_csv`、例外クラス）を import できる。`JitterRow.points` と `BusLoadAnalysis.section_pct` が取り出せる（FR-030、FR-033）。解析関数が records を変更しない
 
 ### Implementation for User Story 5
 
-- [ ] T055 [P] [US5] `src/can_log_analysis/stats.py` に `Histogram`（start_us、width_us、counts）、`nice_ceil(x)`、`make_histogram(sorted_values)` を実装する（MFC `NiceCeil`、`MakeHistogram`）。`math.log10`・`math.floor`・`math.pow(10.0, …)` と許容 `1e-9` を C++ と同じに、`std::llround` は `math.floor(x + 0.5)` で置き換える（research.md R-4）。T052 を通す
-- [ ] T056 [US5] `src/can_log_analysis/__init__.py` で T054 の公開名を再エクスポートする。T054 を通す
-- [ ] T057 [US5] `src/can_log_analysis/log_reader.py` の `read_log_records` で `progress` を呼ぶ（MFC と同じタイミング）。False なら読んだ結果を捨てて `LogReadCancelled` を出す。続けて `src/can_log_analysis/cli.py`（T035 の後）に進捗と中止を入れる（contracts/cli.md「進捗」、research.md R-12）: `--quiet/-q` を足す。`_now = time.monotonic` を経由して開始時刻を取り、`progress` の中で 0.5 秒を超えていれば標準エラーに `ログを読み込んでいます... N%`（N = 読んだバイト数 × 100 // 全体、全体 0 なら 100。前回と同じ N なら出さない）、読み込み後に 0.5 秒を超えていれば `集計しています...` を 1 回出す。標準エラーが端末なら `\r` で上書きして終わりに改行、端末でなければ 1 回 1 行。進捗は標準出力・出力ファイルに書かない。`main` で `KeyboardInterrupt` を受け止め、`中断しました。` を出して 130 を返す（書き出し前ならファイルは作らない）。T053 を通し、T029・T050 も引き続き通ることを確かめる
+- [X] T055 [P] [US5] `src/can_log_analysis/stats.py` に `Histogram`（start_us、width_us、counts）、`nice_ceil(x)`、`make_histogram(sorted_values)` を実装する（MFC `NiceCeil`、`MakeHistogram`）。`math.log10`・`math.floor`・`math.pow(10.0, …)` と許容 `1e-9` を C++ と同じに、`std::llround` は `math.floor(x + 0.5)` で置き換える（research.md R-4）。T052 を通す
+- [X] T056 [US5] `src/can_log_analysis/__init__.py` で T054 の公開名を再エクスポートする。T054 を通す
+- [X] T057 [US5] `src/can_log_analysis/log_reader.py` の `read_log_records` で `progress` を呼ぶ（MFC と同じタイミング）。False なら読んだ結果を捨てて `LogReadCancelled` を出す。続けて `src/can_log_analysis/cli.py`（T035 の後）に進捗と中止を入れる（contracts/cli.md「進捗」、research.md R-12）: `--quiet/-q` を足す。`_now = time.monotonic` を経由して開始時刻を取り、`progress` の中で 0.5 秒を超えていれば標準エラーに `ログを読み込んでいます... N%`（N = 読んだバイト数 × 100 // 全体、全体 0 なら 100。前回と同じ N なら出さない）、読み込み後に 0.5 秒を超えていれば `集計しています...` を 1 回出す。標準エラーが端末なら `\r` で上書きして終わりに改行、端末でなければ 1 回 1 行。進捗は標準出力・出力ファイルに書かない。`main` で `KeyboardInterrupt` を受け止め、`中断しました。` を出して 130 を返す（書き出し前ならファイルは作らない）。T053 を通し、T029・T050 も引き続き通ることを確かめる
 
 **Checkpoint**: すべてのユーザーストーリーが動く
 
@@ -200,11 +200,11 @@ description: "CANログ解析コアとコマンドライン の実装タスク"
 
 **Purpose**: 憲章の品質ゲートと性能
 
-- [ ] T058 [P] `tests/unit/test_no_gui_import.py` を書く: `src/can_log_analysis/` の全 .py を `ast` で読み、`PySide6`、`PyQt5`、`PyQt6`、`tkinter`、`matplotlib`、`numpy`、`pandas` の import がないことを確かめる（憲章 原則 II、SC-005）
-- [ ] T059 [P] `tests/perf/test_large_log.py` と `tests/perf/memory_probe.py` を書く（`@pytest.mark.perf`、SC-003、plan.md Constraints）。16 ECU・31 ID 相当の 300 万行（約 300 MB）の合成ログを、モジュール単位の fixture で tmp に 1 回だけ生成し、次の 2 つを**別々のテスト・別々のプロセス**で測る。(1) 時間: `python -m can_log_analysis <proj> -o <tmp> -q` を subprocess で実行し（4 解析すべて）、経過時間が 60 秒以内。計測中は `tracemalloc` などの計測を一切有効にしない。(2) メモリ: `memory_probe.py` を subprocess で実行する。このスクリプトは同じ CLI の処理を呼んだあと、`ctypes` で Windows の `GetProcessMemoryInfo`（`PROCESS_MEMORY_COUNTERS.PeakWorkingSetSize`）を読んでピークのバイト数を標準出力に出す（Windows 以外では `resource.getrusage(RUSAGE_SELF).ru_maxrss`）。テストはそれが 1 GB 未満であることを確かめる。`tracemalloc` は使わない（処理が数倍遅くなり、ネイティブのメモリも数えないため）。どちらも結果の数値をテストの出力に残す。`pytest -m perf` で実行し、60 秒を超えたら research.md R-3 に従って `log_reader.py` の 1 行あたりの処理を、1 GB を超えたら途中の値の持ち方を見直す
-- [ ] T060 [P] `CLAUDE.md` の「リポジトリの現状」を更新する: 実装が始まったこと、`PythonApplication1/` を削除したこと、テストコマンド（`.venv\Scripts\Activate.ps1`、`pip install -e ".[dev]"`、`pytest`、`pytest -m perf`）、正解生成プログラムのビルド（`tools\mfc_golden\build.ps1` を PowerShell から）
-- [ ] T061 `specs/001-log-analysis-core-cli/quickstart.md` の手順 1〜7 を上から実行し、期待どおりにならない箇所があれば quickstart.md かコードを直す
-- [ ] T062 `pytest` が全件成功し、`tests/data/sample_vehicle_16ecu/golden/VERIFIED.md` にI.Hの確認結果が書かれていることを確かめる（憲章「品質ゲート」1〜4）。未記入なら、その旨を利用者に伝えて完了としない
+- [X] T058 [P] `tests/unit/test_no_gui_import.py` を書く: `src/can_log_analysis/` の全 .py を `ast` で読み、`PySide6`、`PyQt5`、`PyQt6`、`tkinter`、`matplotlib`、`numpy`、`pandas` の import がないことを確かめる（憲章 原則 II、SC-005）
+- [X] T059 [P] `tests/perf/test_large_log.py` と `tests/perf/memory_probe.py` を書く（`@pytest.mark.perf`、SC-003、plan.md Constraints）。16 ECU・31 ID 相当の 300 万行（約 300 MB）の合成ログを、モジュール単位の fixture で tmp に 1 回だけ生成し、次の 2 つを**別々のテスト・別々のプロセス**で測る。(1) 時間: `python -m can_log_analysis <proj> -o <tmp> -q` を subprocess で実行し（4 解析すべて）、経過時間が 60 秒以内。計測中は `tracemalloc` などの計測を一切有効にしない。(2) メモリ: `memory_probe.py` を subprocess で実行する。このスクリプトは同じ CLI の処理を呼んだあと、`ctypes` で Windows の `GetProcessMemoryInfo`（`PROCESS_MEMORY_COUNTERS.PeakWorkingSetSize`）を読んでピークのバイト数を標準出力に出す（Windows 以外では `resource.getrusage(RUSAGE_SELF).ru_maxrss`）。テストはそれが 1 GB 未満であることを確かめる。`tracemalloc` は使わない（処理が数倍遅くなり、ネイティブのメモリも数えないため）。どちらも結果の数値をテストの出力に残す。`pytest -m perf` で実行し、60 秒を超えたら research.md R-3 に従って `log_reader.py` の 1 行あたりの処理を、1 GB を超えたら途中の値の持ち方を見直す
+- [X] T060 [P] `CLAUDE.md` の「リポジトリの現状」を更新する: 実装が始まったこと、`PythonApplication1/` を削除したこと、テストコマンド（`.venv\Scripts\Activate.ps1`、`pip install -e ".[dev]"`、`pytest`、`pytest -m perf`）、正解生成プログラムのビルド（`tools\mfc_golden\build.ps1` を PowerShell から）
+- [X] T061 `specs/001-log-analysis-core-cli/quickstart.md` の手順 1〜7 を上から実行し、期待どおりにならない箇所があれば quickstart.md かコードを直す
+- [X] T062 `pytest` が全件成功し、`tests/data/sample_vehicle_16ecu/golden/VERIFIED.md` にI.Hの確認結果が書かれていることを確かめる（憲章「品質ゲート」1〜4）。未記入なら、その旨を利用者に伝えて完了としない
 
 ---
 

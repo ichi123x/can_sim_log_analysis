@@ -11,7 +11,7 @@ from can_log_analysis.cli import main
 from conftest import DATA_DIR
 
 LOGS = ["as001", "sample_vehicle_16ecu"]
-KINDS = ["latency", "txwait"]
+KINDS = ["latency", "busload", "txwait", "jitter"]
 
 
 def read_as_is(path):

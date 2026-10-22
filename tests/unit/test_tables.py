@@ -4,9 +4,10 @@ import io
 
 import pytest
 
-from can_log_analysis.analysis import analyze_latency, analyze_tx_wait
+from can_log_analysis.analysis import analyze_bus_load, analyze_jitter, analyze_latency, analyze_tx_wait
 from can_log_analysis.log_reader import read_log_records
-from can_log_analysis.tables import Table, latency_table, tx_wait_table, write_table_csv
+from can_log_analysis.tables import (Table, bus_load_table, jitter_table, latency_table, tx_wait_table,
+                                     write_table_csv)
 
 from conftest import DATA_DIR, log_row
 
@@ -68,3 +69,32 @@ def test_notes_carry_the_overwrite_count(make_project):
     records = read_log_records(str(make_project(rows)) + ".log.csv")
     assert "破棄（OVERWRITE）2 件は含みません。" in latency_table(analyze_latency(records), "t.canprj").note
     assert "破棄（OVERWRITE）2 件は含みません。" in tx_wait_table(analyze_tx_wait(records), "t.canprj").note
+
+def test_jitter_table_fr028_fr029(make_project):
+    rows = [log_row(can_id="0x100", tx=1, req=r, start=s) for r, s in [(0, 0), (10000, 10100), (20000, 20000)]]
+    rows.append(log_row(can_id="0x0A0", tx=3, req=0, start=0))
+    records = read_log_records(str(make_project(rows)) + ".log.csv")
+    t = jitter_table(analyze_jitter(records), "t.canprj")
+    assert t.kind == "jitter"
+    assert t.title == "送信ジッター - t.canprj"
+    assert t.note == "連続する送信開始の間隔 − 送信要求の間隔（正は遅れ、負は早まり）。標準偏差は件数で割った値です。"
+    assert t.columns == ["CAN ID", "送信 ECU", "周期 (ms)", "件数", "最小 (µs)", "最大 (µs)", "標準偏差 (µs)"]
+    assert t.rows == [
+        ["0x0A0", "ECU 03", "", "0", "", "", ""],
+        ["0x100", "ECU 01", "10", "2", "-100", "100", "100.0"],
+    ]
+
+def test_bus_load_table_fr034_fr035():
+    t = bus_load_table(analyze_bus_load(read_log_records(AS001)), "as001.canprj")
+    assert t.kind == "busload"
+    assert t.title == "CAN バス負荷 - as001.canprj"
+    assert t.note == "平均負荷 0.0%　最大負荷 4.9%（10000〜10010 ms）　範囲 0〜10010 ms（10 ms ごと）"
+    assert t.columns == ["ECU", "送信フレーム数", "使用率 (%)"]
+    assert t.rows == [["ECU 01", "1", "0.0"], ["ECU 03", "1", "0.0"]]
+
+
+def test_bus_load_summary_without_transmissions(make_project):
+    records = read_log_records(str(make_project([])) + ".log.csv")
+    t = bus_load_table(analyze_bus_load(records), "t.canprj")
+    assert t.note == "平均負荷 0.0%　最大負荷 0.0%（0〜10 ms）　範囲 0〜10 ms（10 ms ごと）"
+    assert t.rows == []

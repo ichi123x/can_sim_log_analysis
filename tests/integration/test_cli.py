@@ -36,6 +36,22 @@ def test_output_dir_writes_only_the_chosen_tables(tmp_path, capsys):
     assert capsys.readouterr().out == ""
 
 
+def test_jitter_comes_after_txwait(capsys):
+    assert main([str(AS001), "-a", "jitter", "-a", "txwait"]) == 0
+    assert capsys.readouterr().out == golden("txwait") + "\n" + golden("jitter")
+
+
+def test_all_four_in_menu_order(capsys):
+    assert main([str(AS001)]) == 0
+    expected = "\n".join(golden(kind) for kind in ("latency", "busload", "txwait", "jitter"))
+    assert capsys.readouterr().out == expected
+
+
+def test_all_with_output_dir(tmp_path):
+    assert main([str(AS001), "-a", "busload", "-a", "all", "-o", str(tmp_path)]) == 0
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["busload.csv", "jitter.csv", "latency.csv", "txwait.csv"]
+
+
 def test_python_m_gives_the_same_utf8_output():
     result = subprocess.run(
         [sys.executable, "-m", "can_log_analysis", str(AS001), "-a", "latency", "-a", "txwait"],

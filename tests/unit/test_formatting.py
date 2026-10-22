@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from can_log_analysis import formatting
-from can_log_analysis.formatting import can_id_text, ecu_name, fixed1
+from can_log_analysis.formatting import can_id_text, ecu_name, fixed1, period_text
 
 RC = Path(__file__).parents[2] / "reference" / "mfc" / "MFCApplication1.rc"
 
@@ -70,3 +70,10 @@ def test_special_characters():
     assert "−" in formatting.IDS_JIT_NOTE           # −
     assert "〜" in formatting.IDS_BUS_SUMMARY        # 〜
     assert "　" in formatting.IDS_BUS_SUMMARY        # ideographic space
+
+
+@pytest.mark.parametrize("period_us,expected", [
+    (10000, "10"), (12500, "12.500"), (1, "0.001"), (0, "0"), (100000, "100"), (-2000, "-2"), (-2500, "-2.500")])
+def test_period_text_fr027(period_us, expected):
+    # integer ms when period_us % 1000 == 0 (C++ remainder and division toward zero), else "%.3f"
+    assert period_text(period_us) == expected

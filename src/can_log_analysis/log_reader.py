@@ -144,6 +144,11 @@ def _read(f, path: Path, total: int, progress: ProgressCallback | None) -> LogRe
             status.append(s)
         if at_end:
             break
+        # after every 4 MB but the last piece, then once at the end (MFC ReadLogRecords)
+        if progress is not None and not progress(bytes_read, total):
+            raise LogReadCancelled()
+    if progress is not None and not progress(bytes_read, total):
+        raise LogReadCancelled()
     if columns is None:
         fail("line 1: no header")
     return records
