@@ -1,50 +1,97 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# CAN Sim Log Analysis Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. MFC版との数値互換（NON-NEGOTIABLE）
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+- 本ツールは MFC 版 CAN シミュレータの解析機能（`reference/mfc`、特に `CanSim/LogAnalysis.cpp`、
+  `AnalysisDlg.cpp`）の Python 移植であり、**MFC 版の出力が正解**である。
+- 同じログから、表の全セルが MFC 版と同じ書式の文字列で一致しなければならない（MUST）。
+  式、集計単位、丸め、P95・ヒストグラムのビン決定、並び順、空欄・0 の扱いまで合わせる。
+- `Doc/CANログ解析ツール仕様.md` と MFC 版のソースが食い違うときは MFC 版を優先し、仕様書を直す。
+- MFC 版にない指標・挙動を「改善」として独自に加えてはならない（MUST NOT）。
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+理由: 合格条件が「MFC 版と同じ数値」であり、1 桁の丸め差でも検証が成立しなくなるため。
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. 解析コアと画面の分離
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+- ログ／.canprj の読み込みと 4 つの解析（受信完了時間、送信待ち時間、送信ジッタ、CAN バス負荷）は、
+  GUI ライブラリ（PySide6 等）に一切依存しない純粋な Python パッケージとして実装する（MUST）。
+- 解析コアはコマンドラインからも呼べ、表の内容をテキスト／CSV で出力できる（MUST）。
+  画面はこのコアの結果を表示するだけの薄い層とする。
+- 表示用の文字列整形（`0x080`、`ECU 01`、小数 1 桁など）はコア側の関数として持ち、
+  画面と CLI とテストで同じ関数を使う。
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+理由: MFC 版の LogAnalysis が MFC 非依存であるのと同じ構成にすることで、
+画面なしで MFC 版との一致を自動検証できるため。
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### III. テストファースト（既知解・ゴールデンテスト）
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+- 解析ロジックは pytest のテストを先に書き、失敗を確認してから実装する（MUST）。
+- 最低限、次の 2 種類のテストを持つ。
+  - 既知解テスト: 仕様書 AS-001 の 3 行ログなど、手計算できる小さな入力。
+  - ゴールデンテスト: `tests/data/` のサンプル（例 `sample_vehicle_16ecu`）に対する MFC 版の期待出力との比較。
+- 境界条件（件数 0、1 回だけの送信、全値同一のヒストグラム、負の値、区間をまたぐ送信、
+  OVERWRITE 行、不正行のエラーメッセージと行番号）はそれぞれテストで固定する。
+- 画面は pytest-qt でメニュー・ウィンドウ再利用・初期選択など主要な振る舞いを確認する（SHOULD）。
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+理由: 数値互換（原則 I）は回帰しやすく、テストでしか守れないため。
+
+### IV. 大容量ログでも固まらない
+
+- 数百万行のログを前提とし、読み込みと計算は GUI スレッドとは別のスレッドで行う（MUST）。
+- 0.5 秒を超える処理では進捗表示を出し、ユーザーが中止できる（MUST）。中止後はアプリが正常状態に戻る。
+- ログは 1 回の走査で必要な集計を作り、行ごとに Python オブジェクトを大量生成するような
+  実装は性能測定で問題ないことを示してから採用する（SHOULD）。
+- グラフは点数が横ピクセル数を超えたら列ごとの最小〜最大（または最大）に間引き、山と谷を消さない。
+
+理由: 実運用のログは大きく、画面が固まるツールは使われないため（仕様 AS-003）。
+
+### V. 仕様へのトレーサビリティと最小スコープ
+
+- 要件は仕様書の ID（AR-xxx、AS-xxx）で参照し、spec／plan／tasks／テストから辿れるようにする（MUST）。
+- 仕様の **[要確認]** 項目（AQ-x）を推測で実装してはならない。`/speckit-clarify` かユーザー確認で決めてから実装する。
+- スコープ外（シミュレーション実行、フレーム編集、エラーフレーム解析、MFC 版にない指標）は
+  憲章の改定なしに追加しない。抽象化・設定項目・依存ライブラリは、いまの要件に必要な分だけにする（YAGNI）。
+
+理由: 移植プロジェクトでは「MFC 版にあるもの」が範囲の境界であり、それを越えると
+原則 I の検証対象が曖昧になるため。
+
+## 技術的制約とプロジェクト種別
+
+- **プロジェクト種別**: Python デスクトップアプリケーション（Windows 向け GUI ＋ CLI）。MFC／Web ではない。
+- **言語・実行環境**: Python 3.11 以上。主な開発・動作確認環境は Windows 11。
+- **ライブラリ**: PySide6（画面）、matplotlib（グラフ）、numpy、ログ読み込みは標準ライブラリ
+  または pandas（plan で性能を見て決める）、pytest／pytest-qt（テスト）。これ以外の依存を足すときは plan に理由を書く。
+- **入力形式**: `.canprj`（UTF-8 INI）と `<.canprjのパス>.log.csv`（UTF-8、ヘッダ付き CSV、列はヘッダ名で探す）。
+  形式の詳細は `Doc/CANログ解析ツール仕様.md` と `Doc/references/CANバスシミュレータ仕様.md` 第 3.8 節に従う。
+- **時間の単位**: ログの時刻は整数 µs として扱い、浮動小数点の誤差が表示値に影響しないようにする。
+- **参照資料の扱い**: `reference/mfc/` と `Doc/references/` は読み取り専用の正解資料であり、本プロジェクトから変更しない。
+- **テストデータ**: `tests/data/` のサンプルはゴールデンテストの入力として版管理する。
+
+## 開発ワークフローと品質ゲート
+
+- 機能開発は Spec Kit の順序（`/speckit-specify` → `/speckit-clarify` → `/speckit-plan` →
+  `/speckit-tasks` → `/speckit-analyze` → `/speckit-implement`）に従い、spec と plan がない状態でコードを書かない。
+- plan の Constitution Check では原則 I〜V を個別に確認し、違反がある場合は理由と代替案を
+  Complexity Tracking に記録する。
+- マージ前の品質ゲート:
+  1. `pytest` が全て成功する（既知解・ゴールデン・境界条件テストを含む）。
+  2. 変更した解析について、MFC 版の出力との一致を確認した記録がある。
+  3. 解析コアが GUI ライブラリを import していない。
+  4. 対応する AR／AS の ID がタスクやテストから辿れる。
+- コミットメッセージとドキュメントは日本語でよい。
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- 本憲章は、このリポジトリの他の慣習・ガイド（`CLAUDE.md` を含む）より優先する。
+  矛盾が見つかった場合は憲章ではなく他方を直すか、憲章を正式に改定する。
+- 改定は `/speckit-constitution` で行い、Sync Impact Report で変更点を示し、プロジェクトオーナーの承認を得る。
+- バージョンはセマンティックバージョニングに従う。
+  - MAJOR: 原則の削除、または互換性のない再定義（例: MFC 版を正解としない）。
+  - MINOR: 原則・節の追加、または指針の実質的な拡張。
+  - PATCH: 文言の明確化、誤字修正など意味を変えない修正。
+- spec／plan／tasks のレビューと `/speckit-analyze` では本憲章への適合を確認する。
+  日々の開発ガイドは `CLAUDE.md` を参照する。
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22

@@ -1,0 +1,3 @@
+# Test data is compared byte for byte (golden CSVs are UTF-8 + LF, simulator logs are CRLF as written);
+# keep them exactly as they are, whatever core.autocrlf is.
+tests/data/** -text

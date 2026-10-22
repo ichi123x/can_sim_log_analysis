@@ -1,0 +1,164 @@
+﻿//{{NO_DEPENDENCIES}}
+// Microsoft Visual C++ で生成されたインクルード ファイル。
+// MFCApplication1.rc で使用されます
+//
+#define IDR_MAINFRAME					128
+#define IDM_ABOUTBOX					0x0010
+#define IDD_ABOUTBOX					100
+#define IDS_ABOUTBOX					101
+#define IDD_MFCAPPLICATION1_DIALOG				102
+
+// feature 004: menu, settings dialog, notification strings
+#define IDR_MAINMENU					129
+#define IDD_SETTINGS					130
+
+#define IDS_PROJECT_FILTER				200
+#define IDS_SIM_COMPLETE				201
+#define IDS_SIM_STOPPED					202
+#define IDS_WRITE_ERROR					203
+#define IDS_LOAD_ERROR					204
+#define IDS_BAD_EXTENSION				205
+#define IDS_SAVE_ERROR					206
+#define IDS_DURATION_ERROR				207
+
+#define IDC_COMBO_ECU_COUNT				1010
+#define IDC_COMBO_BITRATE				1011
+#define IDC_EDIT_DURATION_SEC			1012
+
+// feature 006: data frame editor
+#define IDD_FRAME_EDIT					131
+#define IDD_FRAME_ENTRY					132
+#define IDD_LOG_VIEW					133	// feature 025
+#define IDD_ANALYSIS_LATENCY			134	// feature 028
+#define IDD_ANALYSIS_BUSLOAD			135
+#define IDD_ANALYSIS_TXWAIT			136	// feature 029
+#define IDD_ANALYSIS_JITTER			137
+#define IDD_ANALYSIS_PROGRESS		138	// feature 029 revision 1
+#define IDC_PROGRESS_ANALYSIS		1030
+#define IDC_STATIC_PROGRESS			1031
+#define ID_EDIT_FRAMES					32777
+#define IDC_COMBO_FRAME_NODE			1014
+#define IDC_LIST_FRAMES					1015
+#define IDC_BUTTON_FRAME_ADD			1016
+#define IDC_BUTTON_FRAME_EDIT			1017
+#define IDC_BUTTON_FRAME_DELETE			1018
+#define IDC_EDIT_FRAME_NAME				1019
+#define IDC_EDIT_FRAME_ID				1020
+#define IDC_EDIT_FRAME_DLC				1021
+#define IDC_EDIT_FRAME_PERIOD			1022
+#define IDC_EDIT_FRAME_OFFSET			1023
+#define IDC_STATIC_FRAME_BITS			1024
+#define IDS_FRAME_COL_NO				208
+#define IDS_FRAME_COL_NAME				209
+#define IDS_FRAME_COL_ID				210
+#define IDS_FRAME_COL_DLC				211
+#define IDS_FRAME_COL_OFFSET			212
+#define IDS_FRAME_COL_PERIOD			213
+#define IDS_FRAME_DELETE_CONFIRM		214
+#define IDS_FRAME_INVALID				215
+#define IDS_FIELD_NAME					216
+#define IDS_FIELD_ID					217
+#define IDS_FIELD_DLC					218
+#define IDS_FIELD_PERIOD				219
+#define IDS_FIELD_OFFSET				220
+#define IDS_PROBLEM_EMPTY				221
+#define IDS_PROBLEM_NOT_NUMBER			222
+#define IDS_PROBLEM_RANGE_ID			223
+#define IDS_PROBLEM_RANGE_DLC			224
+#define IDS_PROBLEM_RANGE_PERIOD		225
+#define IDS_PROBLEM_DUPLICATE			226
+#define IDS_PROBLEM_TOO_LONG			227
+#define IDS_PROBLEM_OFFSET				228
+#define IDS_PROBLEM_LIST_FULL			229
+#define IDS_FRAME_BITS					230
+#define IDS_FRAME_TITLE_ADD				231
+#define IDS_FRAME_TITLE_EDIT			232
+
+// feature 009: log view
+#define IDC_SCROLL_LOG					1025
+#define IDC_EDIT_ECU_LABEL				1026	// feature 022
+#define IDC_LIST_ANALYSIS				1027	// feature 028
+#define IDC_STATIC_ANALYSIS				1028
+#define IDC_GRAPH_ANALYSIS				1029
+#define IDS_LOG_STATE_INIT				233
+#define IDS_LOG_STATE_SYNC				234
+#define IDS_LOG_STATE_NORMAL			235
+#define IDS_LOG_STATE_ERR_ACTIVE		236
+#define IDS_LOG_STATE_ERR_PASSIVE		237
+#define IDS_LOG_STATE_BUS_OFF			238
+#define IDS_LOG_FRAME_OK				239
+#define IDS_LOG_FRAME_RETRY				240
+#define IDS_LOG_FRAME_DROPPED			241
+#define IDS_SIM_BTN_START				242	// feature 014
+#define IDS_SIM_BTN_PAUSE				243
+#define IDS_SIM_BTN_STOP				244
+#define IDS_FRAME_DISPLAY_LABEL			245	// feature 017
+#define IDS_SIM_TIME_CAPTION			246
+#define IDS_SIM_TIME_UNIT				247
+#define IDS_SPEED_CAPTION				248	// feature 019
+#define IDS_LOG_VIEW_LABEL				250	// feature 020
+#define IDS_FILE_BTN_SAVE				251	// feature 023
+#define IDS_FILE_BTN_LOAD				252
+#define IDS_SAVE_READONLY				253	// feature 023 revision 1
+#define IDS_PROJECT_PATH_LABEL			254	// feature 024
+#define IDS_LOG_NONE_NOPROJECT			255	// feature 025
+#define IDS_LOG_NONE					256
+#define IDS_LOG_READ_ERROR				257
+#define IDS_LOG_VIEW_TITLE				258
+#define IDS_LOG_COPY_TOO_LARGE			259
+#define IDS_LOG_MENU_COPY				260
+#define IDS_LOG_MENU_SELECT_ALL			261
+#define IDS_LOG_CLEAR_CONFIRM			262	// feature 027
+#define IDS_LOG_CLEAR_DONE				263
+#define IDS_LOG_CLEAR_FAILED			264
+#define IDS_LAT_TITLE					265	// feature 028
+#define IDS_LAT_COLUMNS					266
+#define IDS_LAT_ALL						267
+#define IDS_LAT_NOTE					268
+#define IDS_LAT_AXIS_X					269
+#define IDS_LAT_AXIS_Y					270
+#define IDS_BUS_TITLE					271
+#define IDS_BUS_SUMMARY					272
+#define IDS_BUS_COLUMNS					273
+#define IDS_BUS_AXIS_X					274
+#define IDS_BUS_AXIS_Y					275
+#define IDS_ANALYSIS_NO_DATA			276
+#define IDS_BUS_AVERAGE					277
+#define IDS_WAIT_TITLE					278	// feature 029
+#define IDS_WAIT_COLUMNS				279
+#define IDS_WAIT_NOTE					280
+#define IDS_JIT_TITLE					281
+#define IDS_JIT_COLUMNS				282
+#define IDS_JIT_NOTE					283
+#define IDS_JIT_AXIS_Y					284
+#define IDS_ANALYZING_READ			285	// feature 029 revision 1
+#define IDS_ANALYZING_CALC			286
+#define IDS_ANALYZING_CANCEL		287
+
+#define ID_FILE_LOAD_PROJECT			32771
+#define ID_FILE_SAVE_PROJECT			32772
+#define ID_EDIT_SETTINGS				32773
+#define ID_SIM_START					32775
+#define ID_SIM_STOP						32776
+#define ID_SIM_PAUSE					32778	// feature 014
+#define ID_FILE_SAVE_OVERWRITE			32779	// feature 023 (toolbar only)
+#define ID_LOG_VIEW_SIMLOG				32780	// feature 025
+#define ID_ANALYSIS_LATENCY				32785	// feature 028 (replaces the 025 placeholder 32781)
+#define ID_ANALYSIS_BUSLOAD				32786
+#define ID_ANALYSIS_TXWAIT			32787	// feature 029
+#define ID_ANALYSIS_JITTER			32788
+#define ID_LOG_COPY						32782
+#define ID_LOG_SELECT_ALL				32783
+#define ID_LOG_CLEAR					32784	// feature 027
+
+// 新しいオブジェクトの次の既定値
+//
+#ifdef APSTUDIO_INVOKED
+#ifndef APSTUDIO_READONLY_SYMBOLS
+
+#define _APS_NEXT_RESOURCE_VALUE	139
+#define _APS_NEXT_CONTROL_VALUE		1032
+#define _APS_NEXT_SYMED_VALUE		288
+#define _APS_NEXT_COMMAND_VALUE		32789
+#endif
+#endif

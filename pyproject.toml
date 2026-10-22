@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "can_log_analysis"
+version = "0.1.0"
+description = "MFC 版 CAN バスシミュレータのフレームログを解析する（受信完了時間・送信待ち時間・送信ジッタ・CAN バス負荷）"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+can-log-analysis = "can_log_analysis.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["perf: 300 万行の性能テスト"]
+addopts = "-m 'not perf'"

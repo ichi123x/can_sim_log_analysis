@@ -1,0 +1,4 @@
+[Project]
+EcuCount=5
+[Network]
+BitRateBps=500000

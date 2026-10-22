@@ -1,0 +1,17 @@
+Node_Id,Node_Name,Power_On_us,Init_Done_us,Normal_Entry_us,Reached_Normal
+1,ECM Engine Control Module,0,0,22,TRUE
+2,TCM Transmission Control,0,0,22,TRUE
+3,ESC Brake and Stability Control,0,0,22,TRUE
+4,EPS Electric Power Steering,0,0,22,TRUE
+5,SRS Airbag Control Unit,0,0,22,TRUE
+6,CGW Central Gateway,0,0,22,TRUE
+7,BCM Body Control Module,0,0,22,TRUE
+8,IPC Instrument Cluster,0,0,22,TRUE
+9,HVAC Climate Control,0,0,22,TRUE
+10,ADAS Front Camera,0,0,22,TRUE
+11,ACC Front Radar,0,0,22,TRUE
+12,DCU Door Control Front Left,0,0,22,TRUE
+13,DCU Door Control Front Right,0,0,22,TRUE
+14,BMS 12V Battery Sensor,0,0,22,TRUE
+15,TPMS Tire Pressure Monitor,0,0,22,TRUE
+16,IVI Infotainment Head Unit,0,0,22,TRUE
