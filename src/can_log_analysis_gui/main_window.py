@@ -4,6 +4,7 @@ from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QApplication, QMainWindow
 
+from can_log_analysis.errors import ProjectNotFoundError, ProjectReadError
 from can_log_analysis.project import open_project, read_project_contents
 from can_log_analysis_gui import texts
 from can_log_analysis_gui.analysis_window import MIN_SIZE, WINDOWS, apply_frame_size
@@ -74,8 +75,16 @@ class MainWindow(QMainWindow):
             self.open_project(path)
 
     def open_project(self, path) -> bool:
-        project = open_project(path)
-        contents = read_project_contents(project)
+        """読めなければ IDS_LOAD_ERROR を出し、それまでのプロジェクトと解析画面をそのまま残す（FR-006）。"""
+        try:
+            project = open_project(path)
+            contents = read_project_contents(project)
+        except ProjectNotFoundError as e:
+            self._message("warning", texts.IDS_LOAD_ERROR % f"ファイルがありません: {e.path}")
+            return False
+        except ProjectReadError as e:
+            self._message("warning", texts.IDS_LOAD_ERROR % e)
+            return False
         self.close_analysis_windows()
         self.project = project
         self.contents = contents
@@ -98,7 +107,14 @@ class MainWindow(QMainWindow):
             window.raise_()
             window.activateWindow()
             return
-        if self.job is not None or self.project is None:
+        if self.job is not None:
+            return
+        # MFC RunAnalysis: the same notices as "ログ表示 > シミュレーションログ"
+        if self.project is None:
+            self._message("information", texts.IDS_LOG_NONE_NOPROJECT)
+            return
+        if not self.project.log_path.is_file():
+            self._message("information", texts.IDS_LOG_NONE % self.project.name)
             return
         self.job = AnalysisJob(self.project, kind, self)
         self.job.finished.connect(self._on_job_finished)
@@ -143,6 +159,15 @@ class MainWindow(QMainWindow):
         if state == "done":
             analysis, table = result
             self._open_window(job.kind, analysis, table)
+        elif state == "read_error":
+            # MFC shows the log path only, not the line (the CLI shows it: can-log-analysis PROJECT)
+            self._message("warning", texts.IDS_LOG_READ_ERROR % job.project.log_path)
+        # cancelled: no window and no message (MFC)
+
+    def _message(self, icon, text):
+        from can_log_analysis_gui import app  # replaceable dialogs (tests)
+
+        app.show_message(self, icon, text)
 
     def closeEvent(self, event):
         """MFC と同じく解析中は閉じられない（入力を受け付けない）が、閉じる要求が届いたら中断して止まるのを待つ（FR-016）。"""

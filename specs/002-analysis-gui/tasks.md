@@ -150,11 +150,11 @@ description: "CANログ解析ツールの画面 の実装タスク"
 
 ### Tests for User Story 5（先に書いて失敗を確認する）
 
-- [ ] T028 [P] [US5] `tests/gui/test_messages.py` を書く（FR-006、FR-010、FR-015、FR-060a）: 起動直後に「解析 > 送信待ち時間」→ `dialogs` に ("information", IDS_LOG_NONE_NOPROJECT)、ジョブなし。`tests/data/errors/no_log.canprj` を開いて解析 → ("information", IDS_LOG_NONE % "no_log.canprj")。`bad_number.canprj` → ("warning", IDS_LOG_READ_ERROR % <ログのフルパス>)、解析画面なし。sample を開いた後に `bad_project.canprj` を開く → ("warning", IDS_LOAD_ERROR % <理由>)、タイトル・表示・開いている解析画面は sample のまま。起動引数に `bad_project.canprj` → メッセージを出して未選択で起動
+- [X] T028 [P] [US5] `tests/gui/test_messages.py` を書く（FR-006、FR-010、FR-015、FR-060a）: 起動直後に「解析 > 送信待ち時間」→ `dialogs` に ("information", IDS_LOG_NONE_NOPROJECT)、ジョブなし。`tests/data/errors/no_log.canprj` を開いて解析 → ("information", IDS_LOG_NONE % "no_log.canprj")。`bad_number.canprj` → ("warning", IDS_LOG_READ_ERROR % <ログのフルパス>)、解析画面なし。sample を開いた後に `bad_project.canprj` を開く → ("warning", IDS_LOAD_ERROR % <理由>)、タイトル・表示・開いている解析画面は sample のまま。起動引数に `bad_project.canprj` → メッセージを出して未選択で起動
 
 ### Implementation for User Story 5
 
-- [ ] T029 [US5] `src/can_log_analysis_gui/main_window.py` にメッセージを入れる（contracts/gui.md「解析の実行」2・6、「プロジェクトを開いたとき」）: `run_analysis` の前に未選択・ログなし（`project.log_path` がファイルでない）を確かめる、ジョブの read_error で IDS_LOG_READ_ERROR、`open_project` の `ProjectNotFoundError`／`ProjectReadError` で IDS_LOAD_ERROR（理由は例外の文）を出して状態を変えない。メッセージは `app.show_message` 経由。T028 を通す
+- [X] T029 [US5] `src/can_log_analysis_gui/main_window.py` にメッセージを入れる（contracts/gui.md「解析の実行」2・6、「プロジェクトを開いたとき」）: `run_analysis` の前に未選択・ログなし（`project.log_path` がファイルでない）を確かめる、ジョブの read_error で IDS_LOG_READ_ERROR、`open_project` の `ProjectNotFoundError`／`ProjectReadError` で IDS_LOAD_ERROR（理由は例外の文）を出して状態を変えない。メッセージは `app.show_message` 経由。T028 を通す
 
 **Checkpoint**: すべてのユーザーストーリーが動く
 
