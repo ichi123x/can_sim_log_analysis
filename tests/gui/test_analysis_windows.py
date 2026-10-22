@@ -1,8 +1,10 @@
 """解析画面（FR-005、FR-011、FR-020〜FR-025、FR-030〜FR-032、SC-001、contracts/gui.md「解析画面」）。"""
 
+import pytest
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
+from PySide6.QtGui import QFont, QFontMetrics
 
-from can_log_analysis_gui.analysis_window import place_window
+from can_log_analysis_gui.analysis_window import LIST_SELECTION_STYLE, place_window
 from can_log_analysis_gui.graph import Bars, Deviation, NoData
 
 from conftest import DATA_DIR
@@ -201,3 +203,29 @@ def test_windows_are_modeless_fr020(main_window, dialogs, wait_window):
     a.table_widget.selectRow(3)
     b.table_widget.selectRow(2)
     assert (a.selected_row(), b.selected_row()) == (3, 2)
+
+# ---- リストの見た目（MFC: FONT 9, "MS UI Gothic"、見出しは標準の太さ、開いたら 1 行目を選んでフォーカス） ----
+
+@pytest.mark.parametrize("kind", ["txwait", "latency", "jitter"])
+def test_list_font_and_row_height_like_mfc(main_window, dialogs, wait_window, kind):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, kind)
+    t = w.table_widget
+    for widget in (t, t.horizontalHeader(), w.note_label):
+        assert widget.font().family() == "MS UI Gothic", widget
+        assert widget.font().pointSize() == 9, widget
+    assert t.horizontalHeader().font().weight() == QFont.Weight.Normal
+    for c in range(t.columnCount()):
+        assert not t.horizontalHeaderItem(c).font().bold()
+    row_h = t.rowHeight(0)
+    assert row_h == QFontMetrics(t.font()).height() + 3  # about 19 px at 125 %, as the MFC list
+    assert all(t.rowHeight(r) == row_h for r in range(t.rowCount()))
+
+
+@pytest.mark.parametrize("kind", ["txwait", "latency", "jitter"])
+def test_first_row_selected_and_list_focused_like_mfc(main_window, dialogs, wait_window, kind):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, kind)
+    assert w.selected_row() == 0
+    assert w.focusWidget() is w.table_widget  # MFC m_list.SetFocus(): the selection is shown highlighted
+    # the selected row in the highlight colour, grey when the window is inactive (LVS_SHOWSELALWAYS); no cell frame
+    assert w.table_widget.styleSheet() == LIST_SELECTION_STYLE
+    assert "palette(highlight)" in LIST_SELECTION_STYLE and "outline: 0" in LIST_SELECTION_STYLE

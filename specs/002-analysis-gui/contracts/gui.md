@@ -69,6 +69,10 @@ can_log_analysis_gui.bat [PROJECT]      # リポジトリ直下。ダブルク�
   配置の式（LayoutListNoteGraph など）は MFC と同じく中身の大きさで計算する。メインウィンドウの 900×600 も枠を含めた大きさ。
 - 最小 520×400。MFC `CAnalysisDlgBase::OnInitDialog` と同じく、枠を含めた矩形をメインウィンドウ（枠を含む）の中央に置き、
   モニタの作業領域からはみ出せば右 → 下 → 左 → 上の順にずらす。モードレス。Esc と閉じるボタンで閉じる。Enter では閉じない。
+- 表の見た目（MFC `MFCApplication1.rc` の IDD_ANALYSIS_*: `FONT 9, "MS UI Gothic"`、AnalysisDlg.cpp の CreateList と `m_list.SetFocus()`。
+  2026-10-23 に MFC 版と見比べて追加）: 表・見出し・注記は MS UI Gothic 9 ポイント、見出しは太字にしない。行の高さはフォントの高さ + 3
+  （拡大率 125% で約 19 px。初期サイズで約 13 行見える）。開いたら 1 行目を選び、表にフォーカスを置く。選択行は行全体を選択色（白い文字）で描き、
+  ウィンドウが非アクティブのときは灰色（LVS_SHOWSELALWAYS）。セルごとのフォーカス枠は描かない。グラフの文字は Meiryo UI 12 px、色は AnalysisDlg.cpp の定数。
 - 表: 列見出しと全セルは Table.columns・Table.rows をそのまま。1 行単位で 1 行だけ選べる。罫線あり。列幅（96 dpi 換算）と右寄せの開始列は MFC CreateList と同じ:
   - txwait・latency: 幅 90, 90, 80, 100, 100, 100, 100、3 列目から右寄せ。
   - jitter: 幅 90, 90, 90, 80, 100, 100, 110、3 列目から右寄せ。

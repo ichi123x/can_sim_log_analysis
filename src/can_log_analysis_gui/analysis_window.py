@@ -5,14 +5,37 @@
 """
 
 from PySide6.QtCore import QRect, QSize, Qt, Signal
-from PySide6.QtGui import QKeySequence, QShortcut
-from PySide6.QtWidgets import QAbstractItemView, QLabel, QTableWidget, QTableWidgetItem, QWidget
+from PySide6.QtGui import QFont, QFontMetrics, QKeySequence, QShortcut
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QLabel, QTableWidget, QTableWidgetItem, QWidget
 
 from can_log_analysis.stats import make_histogram
 from can_log_analysis_gui import texts
 from can_log_analysis_gui.graph import GraphWidget
 
 MIN_SIZE = QSize(520, 400)
+
+
+def dialog_font() -> QFont:
+    """MFC の解析画面のフォント（MFCApplication1.rc の IDD_ANALYSIS_*: FONT 9, "MS UI Gothic"）。表・見出し・注記に使う。"""
+    font = QFont("MS UI Gothic")
+    font.setPointSize(9)
+    font.setWeight(QFont.Weight.Normal)
+    return font
+
+
+# The MFC list draws the selected row in the system highlight colour (white text) while its window is active and,
+# with LVS_SHOWSELALWAYS, in grey otherwise. Qt's windows11 style draws a pale grey row instead, so set it here.
+LIST_SELECTION_STYLE = (
+    "QTableView { outline: 0; }"  # no frame around the current cell (MFC selects whole rows)
+    "QTableView::item:selected, QTableView::item:selected:focus"
+    " { background: palette(highlight); color: palette(highlighted-text); }"
+    "QTableView::item:selected:!active { background: palette(button); color: palette(text); }"
+)
+
+
+def list_row_height(font: QFont) -> int:
+    """MFC のリスト（LVS_REPORT＋グリッド線）と同じ詰め方の行の高さ（125% で約 19 px）。"""
+    return QFontMetrics(font).height() + 3
 
 
 def place_window(size: QSize, owner: QRect, work: QRect) -> QRect:
@@ -63,6 +86,7 @@ class AnalysisWindow(QWidget):
         self.analysis = analysis
         self.table = table
         self._owner = owner
+        self.setFont(dialog_font())
         self.setWindowTitle(table.title)
         self.table_widget = self._make_table(table)
         self.graph = GraphWidget(self)
@@ -76,12 +100,22 @@ class AnalysisWindow(QWidget):
         t.setSelectionMode(QAbstractItemView.SingleSelection)
         t.setSelectionBehavior(QAbstractItemView.SelectRows)
         t.setShowGrid(True)
-        t.verticalHeader().setVisible(False)
-        t.verticalHeader().setDefaultSectionSize(t.fontMetrics().height() + 6)  # compact rows as the MFC list
-        t.horizontalHeader().setStretchLastSection(False)
+        font = dialog_font()
+        t.setFont(font)
+        t.setStyleSheet(LIST_SELECTION_STYLE)
+        rows = t.verticalHeader()
+        rows.setVisible(False)
+        rows.setMinimumSectionSize(1)
+        rows.setSectionResizeMode(QHeaderView.Fixed)
+        rows.setDefaultSectionSize(list_row_height(font))
+        header = t.horizontalHeader()
+        header.setFont(font)  # the MFC list header is not bold
+        header.setStretchLastSection(False)
+        header.setHighlightSections(False)  # a selected row must not make the header bold
         for c in range(len(table.columns)):
             align = (Qt.AlignRight if c >= self.numeric_from else Qt.AlignLeft) | Qt.AlignVCenter
             t.horizontalHeaderItem(c).setTextAlignment(align)
+            t.horizontalHeaderItem(c).setFont(font)
             if c < len(self.widths):
                 t.setColumnWidth(c, self.widths[c])
         for r, row in enumerate(table.rows):
@@ -135,6 +169,7 @@ class ListNoteGraphWindow(AnalysisWindow):
             self.table_widget.selectRow(0)
         else:
             self.graph.set_no_data(texts.IDS_ANALYSIS_NO_DATA)
+        self.table_widget.setFocus()  # MFC m_list.SetFocus(): the selected row is shown highlighted
 
     def layout_content(self, cx, cy):
         margin, note_h = 8, 22

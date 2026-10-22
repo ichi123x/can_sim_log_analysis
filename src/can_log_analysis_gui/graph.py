@@ -19,13 +19,15 @@ from can_log_analysis_gui import texts
 # plot area margins (96 dpi; Qt scales logical pixels)
 _LEFT, _TOP, _RIGHT, _BOTTOM = 70, 32, 20, 46
 
+# the colours and text size of MFC AnalysisDlg.cpp (kGraphBack ... kTextPx)
 _BACK = QColor(255, 255, 255)
 _FRAME = QColor(160, 160, 160)
-_GRID = QColor(230, 230, 230)
-_TEXT = QColor(64, 64, 64)
-_DATA = QColor(31, 111, 200)
-_ZERO = QColor(128, 128, 128)
-_AVERAGE = QColor(214, 96, 0)
+_GRID = QColor(225, 225, 225)
+_TEXT = QColor(60, 60, 60)
+_DATA = QColor(30, 110, 200)
+_ZERO = QColor(150, 150, 150)
+_AVERAGE = QColor(240, 140, 0)
+_TEXT_PX = 12  # Meiryo UI
 
 
 # ---- what the graph shows (MFC CAnalysisGraph modes) ----
@@ -200,7 +202,7 @@ class GraphWidget(QWidget):
         p = QPainter(self)
         p.fillRect(0, 0, w, h, _BACK)
         font = QFont("Meiryo UI")
-        font.setPixelSize(12)
+        font.setPixelSize(_TEXT_PX)
         p.setFont(font)
         p.setPen(_FRAME)
         p.drawRect(0, 0, w - 1, h - 1)
