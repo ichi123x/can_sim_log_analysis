@@ -113,11 +113,11 @@ description: "CANログ解析ツールの画面 の実装タスク"
 
 ### Tests for User Story 3（先に書いて失敗を確認する）
 
-- [ ] T023 [P] [US3] `tests/gui/test_analysis_windows.py` に CAN バス負荷のテストを足す（FR-040、FR-041、AR-084）: タイトル・要約（2 行目）・列見出し・ECU 表の全セルが `golden("sample_vehicle_16ecu", "busload")` と一致、列幅 100,140,120、右寄せは 2 列目から、`frameGeometry()` が 960×680（枠を含む）、配置は中身の大きさ（`rect()`）で CBusLoadDlg::LayoutContent の式に合う（要約 22、グラフ = 残り × 3 // 5、表は残り）。グラフは Line（区間 500、平均 = analysis.average_pct、y 目盛り 0〜100）。表の行を選んでもグラフは変わらない。ヘッダだけのログ（tmp に作る）のプロジェクトでは NoData
+- [X] T023 [P] [US3] `tests/gui/test_analysis_windows.py` に CAN バス負荷のテストを足す（FR-040、FR-041、AR-084）: タイトル・要約（2 行目）・列見出し・ECU 表の全セルが `golden("sample_vehicle_16ecu", "busload")` と一致、列幅 100,140,120、右寄せは 2 列目から、`frameGeometry()` が 960×680（枠を含む）、配置は中身の大きさ（`rect()`）で CBusLoadDlg::LayoutContent の式に合う（要約 22、グラフ = 残り × 3 // 5、表は残り）。グラフは Line（区間 500、平均 = analysis.average_pct、y 目盛り 0〜100）。表の行を選んでもグラフは変わらない。ヘッダだけのログ（tmp に作る）のプロジェクトでは NoData
 
 ### Implementation for User Story 3
 
-- [ ] T024 [US3] `src/can_log_analysis_gui/analysis_window.py` に `SummaryGraphListWindow`（要約・グラフ・表の配置、送信 0 なら NoData、それ以外 `set_line(section_pct, section_us, average_pct, IDS_BUS_AXIS_X, IDS_BUS_AXIS_Y)`）を実装し、`src/can_log_analysis_gui/main_window.py` の「CAN バス負荷」を有効にする。T023 を通す
+- [X] T024 [US3] `src/can_log_analysis_gui/analysis_window.py` に `SummaryGraphListWindow`（要約・グラフ・表の配置、送信 0 なら NoData、それ以外 `set_line(section_pct, section_us, average_pct, IDS_BUS_AXIS_X, IDS_BUS_AXIS_Y)`）を実装し、`src/can_log_analysis_gui/main_window.py` の「CAN バス負荷」を有効にする。T023 を通す
 
 **Checkpoint**: 4 画面がそろう
 

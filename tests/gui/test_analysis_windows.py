@@ -5,7 +5,7 @@ from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QFont, QFontMetrics
 
 from can_log_analysis_gui.analysis_window import LIST_SELECTION_STYLE, place_window
-from can_log_analysis_gui.graph import Bars, Deviation, NoData
+from can_log_analysis_gui.graph import Bars, Deviation, Line, NoData
 
 from conftest import DATA_DIR
 
@@ -229,3 +229,71 @@ def test_first_row_selected_and_list_focused_like_mfc(main_window, dialogs, wait
     # the selected row in the highlight colour, grey when the window is inactive (LVS_SHOWSELALWAYS); no cell frame
     assert w.table_widget.styleSheet() == LIST_SELECTION_STYLE
     assert "palette(highlight)" in LIST_SELECTION_STYLE and "outline: 0" in LIST_SELECTION_STYLE
+
+# ---- CAN バス負荷（US3） ----
+
+def test_busload_matches_golden_fr040(main_window, dialogs, wait_window, golden):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "busload")
+    title, summary, columns, rows = golden("sample_vehicle_16ecu", "busload")
+    assert w.windowTitle() == title == "CAN バス負荷 - sample_vehicle_16ecu.canprj"
+    assert w.summary_label.text() == summary
+    assert (headers(w), table_cells(w)) == (columns, rows)
+    t = w.table_widget
+    assert [t.columnWidth(c) for c in range(3)] == [100, 140, 120]
+    for c in range(3):
+        assert bool(t.item(0, c).textAlignment() & Qt.AlignRight) == (c >= 1), c
+
+
+def test_busload_graph_is_the_load_line_fr041(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "busload")
+    content = w.graph.content()
+    assert isinstance(content, Line)
+    assert len(content.pct) == 500 and content.section_us == 10000
+    assert content.average_pct == w.analysis.average_pct
+    assert (content.x_label, content.y_label) == ("時刻 (ms)", "負荷 (%)")
+    plan = w.graph.plan(w.graph.width(), w.graph.height())
+    assert [v for v, _ in plan.y_ticks] == [0, 20, 40, 60, 80, 100]
+    assert plan.average[1] == f"平均 {w.summary_label.text().split()[1][:-1]}%"  # 平均負荷 19.0% -> 平均 19.0%
+
+
+def test_busload_selecting_a_row_keeps_the_graph(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "busload")
+    before = w.graph.content()
+    w.table_widget.selectRow(3)
+    assert w.graph.content() is before
+
+
+def test_busload_opens_without_a_selection_like_mfc(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "busload")
+    assert w.selected_row() == -1  # CBusLoadDlg::CreateContent selects nothing
+    assert w.focusWidget() is w.table_widget
+
+
+def test_busload_without_transmissions_has_no_data(main_window, dialogs, wait_window, make_project):
+    w = open_and_run(main_window, dialogs, wait_window, make_project([]), "busload")
+    assert isinstance(w.graph.content(), NoData)
+    assert w.table_widget.rowCount() == 0
+
+
+def test_busload_size_and_layout_fr022_fr040(qtbot, main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "busload")
+    assert w.frameGeometry().size() == QSize(960, 680)
+    width, height = w.rect().width(), w.rect().height()
+    assert w.summary_label.geometry() == QRect(8, 8, width - 16, 22)
+    top = 8 + 22 + 4
+    rest = max(0, height - 8 - top - 6)
+    graph_h = rest * 3 // 5
+    assert w.graph.geometry() == QRect(8, top, width - 16, graph_h)
+    list_top = top + graph_h + 6
+    assert w.table_widget.geometry() == QRect(8, list_top, width - 16, height - 8 - list_top)
+    w.resize(10, 10)
+    qtbot.waitUntil(lambda: w.frameGeometry().size() == QSize(520, 400))
+
+
+def test_busload_list_font_like_mfc(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "busload")
+    t = w.table_widget
+    for widget in (t, t.horizontalHeader(), w.summary_label):
+        assert (widget.font().family(), widget.font().pointSize()) == ("MS UI Gothic", 9)
+    assert t.rowHeight(0) == QFontMetrics(t.font()).height() + 3
+    assert t.styleSheet() == LIST_SELECTION_STYLE

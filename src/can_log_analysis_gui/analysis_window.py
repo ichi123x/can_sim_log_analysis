@@ -235,4 +235,37 @@ class JitterWindow(ListNoteGraphWindow):
             self.graph.set_deviation(row.points, texts.IDS_BUS_AXIS_X, texts.IDS_JIT_AXIS_Y)
 
 
-WINDOWS = {"txwait": TxWaitWindow, "latency": LatencyWindow, "jitter": JitterWindow}
+class BusLoadWindow(AnalysisWindow):
+    """CAN バス負荷（MFC CBusLoadDlg）: 上に要約 1 行、中央に区間ごとの負荷率の折れ線、下に ECU の表。
+    表の行を選んでもグラフは変わらない。開いたときは行を選ばない（CreateContent は SetFocus だけ）。"""
+
+    initial_size = QSize(960, 680)
+    widths = (100, 140, 120)
+    numeric_from = 1
+
+    def __init__(self, kind, analysis, table, owner):
+        super().__init__(kind, analysis, table, owner)
+        self.summary_label = QLabel(table.note, self)
+        self.summary_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.note_label = self.summary_label  # the line under the title, as in the other windows
+        if analysis.transmission_count == 0:
+            self.graph.set_no_data(texts.IDS_ANALYSIS_NO_DATA)
+        else:
+            self.graph.set_line(analysis.section_pct, analysis.section_us, analysis.average_pct,
+                                texts.IDS_BUS_AXIS_X, texts.IDS_BUS_AXIS_Y)
+        self.table_widget.setFocus()
+
+    def layout_content(self, cx, cy):
+        # CBusLoadDlg::LayoutContent
+        margin, summary_h = 8, 22
+        width = max(0, cx - 2 * margin)
+        self.summary_label.setGeometry(margin, margin, width, summary_h)
+        top = margin + summary_h + 4
+        rest = max(0, cy - margin - top - 6)
+        graph_h = rest * 3 // 5
+        self.graph.setGeometry(margin, top, width, graph_h)
+        list_top = top + graph_h + 6
+        self.table_widget.setGeometry(margin, list_top, width, max(0, cy - margin - list_top))
+
+
+WINDOWS = {"txwait": TxWaitWindow, "latency": LatencyWindow, "jitter": JitterWindow, "busload": BusLoadWindow}
