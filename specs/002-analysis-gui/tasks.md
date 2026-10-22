@@ -95,11 +95,11 @@ description: "CANログ解析ツールの画面 の実装タスク"
 
 ### Tests for User Story 2（先に書いて失敗を確認する）
 
-- [ ] T021 [P] [US2] `tests/gui/test_analysis_windows.py` に受信完了時間と送信ジッターのテストを足す（FR-032〜FR-034、SC-001）: 受信完了時間の表・注記・タイトルが `golden("sample_vehicle_16ecu", "latency")` と一致、列幅・右寄せは txwait と同じ、全体の行のヒストグラム。送信ジッターの表・注記・タイトルが golden の jitter と一致、列幅 90,90,90,80,100,100,110、右寄せは 3 列目から、1 行目（0x050）の Deviation（点 49 個、横軸名「時刻 (ms)」、縦軸名「ずれ (µs)」）。as001 を開いて送信ジッター → 2 行とも件数 0 で、グラフは NoData「データがありません」。ジッター画面を幅 400 にすると 0x0A0（499 点）の描画計画が列ごとの縦線になる（FR-033、AR-073）
+- [X] T021 [P] [US2] `tests/gui/test_analysis_windows.py` に受信完了時間と送信ジッターのテストを足す（FR-032〜FR-034、SC-001）: 受信完了時間の表・注記・タイトルが `golden("sample_vehicle_16ecu", "latency")` と一致、列幅・右寄せは txwait と同じ、全体の行のヒストグラム。送信ジッターの表・注記・タイトルが golden の jitter と一致、列幅 90,90,90,80,100,100,110、右寄せは 3 列目から、1 行目（0x050）の Deviation（点 49 個、横軸名「時刻 (ms)」、縦軸名「ずれ (µs)」）。as001 を開いて送信ジッター → 2 行とも件数 0 で、グラフは NoData「データがありません」。ジッター画面を幅 400 にすると 0x0A0（499 点）の描画計画が列ごとの縦線になる（FR-033、AR-073）
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] `src/can_log_analysis_gui/analysis_window.py` に latency 用と jitter 用の設定を足す（列幅、右寄せ開始列、グラフ: latency は txwait と同じ、jitter は件数 0 → NoData、それ以外 → `set_deviation(row.points, IDS_BUS_AXIS_X, IDS_JIT_AXIS_Y)`）。`src/can_log_analysis_gui/main_window.py` の「受信完了時間」「送信ジッター」を有効にする。T021 を通す
+- [X] T022 [US2] `src/can_log_analysis_gui/analysis_window.py` に latency 用と jitter 用の設定を足す（列幅、右寄せ開始列、グラフ: latency は txwait と同じ、jitter は件数 0 → NoData、それ以外 → `set_deviation(row.points, IDS_BUS_AXIS_X, IDS_JIT_AXIS_Y)`）。`src/can_log_analysis_gui/main_window.py` の「受信完了時間」「送信ジッター」を有効にする。T021 を通す
 
 **Checkpoint**: US1 と US2 が動く
 

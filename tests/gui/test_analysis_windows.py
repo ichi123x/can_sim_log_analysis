@@ -3,7 +3,7 @@
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
 
 from can_log_analysis_gui.analysis_window import place_window
-from can_log_analysis_gui.graph import Bars, NoData
+from can_log_analysis_gui.graph import Bars, Deviation, NoData
 
 from conftest import DATA_DIR
 
@@ -138,3 +138,66 @@ def test_window_is_placed_by_place_window(main_window, dialogs, wait_window):
     w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
     expected = place_window(QSize(900, 640), main_window.frameGeometry(), w.screen().availableGeometry())
     assert w.frameGeometry().topLeft() == expected.topLeft()
+
+
+# ---- 受信完了時間・送信ジッター（US2） ----
+
+def test_latency_table_matches_golden_sc001(main_window, dialogs, wait_window, golden):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "latency")
+    title, note, columns, rows = golden("sample_vehicle_16ecu", "latency")
+    assert (w.windowTitle(), w.note_label.text(), headers(w), table_cells(w)) == (title, note, columns, rows)
+    t = w.table_widget
+    assert [t.columnWidth(c) for c in range(7)] == [90, 90, 80, 100, 100, 100, 100]
+    content = w.graph.content()
+    assert isinstance(content, Bars)
+    assert sum(content.histogram.counts) == int(rows[0][2])  # the all row
+    assert (content.x_label, content.y_label) == ("時間 (µs)", "件数")
+
+
+def test_jitter_table_matches_golden_sc001(main_window, dialogs, wait_window, golden):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "jitter")
+    title, note, columns, rows = golden("sample_vehicle_16ecu", "jitter")
+    assert (w.windowTitle(), w.note_label.text(), headers(w), table_cells(w)) == (title, note, columns, rows)
+    t = w.table_widget
+    assert [t.columnWidth(c) for c in range(7)] == [90, 90, 90, 80, 100, 100, 110]
+    for c in range(7):
+        assert bool(t.item(0, c).textAlignment() & Qt.AlignRight) == (c >= 2), c
+
+
+def test_jitter_first_row_is_a_time_series_fr033(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "jitter")
+    assert w.selected_row() == 0 and table_cells(w)[0][0] == "0x050"
+    content = w.graph.content()
+    assert isinstance(content, Deviation)
+    assert len(content.points) == 49
+    assert (content.x_label, content.y_label) == ("時刻 (ms)", "ずれ (µs)")
+
+
+def test_jitter_sent_once_has_no_data(main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, AS001, "jitter")
+    assert [r[3] for r in table_cells(w)] == ["0", "0"]
+    for row in range(2):
+        w.table_widget.selectRow(row)
+        assert isinstance(w.graph.content(), NoData)
+
+
+def test_jitter_more_points_than_columns_ar073(qtbot, main_window, dialogs, wait_window):
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "jitter")
+    w.resize(10, 10)  # down to the minimum size
+    qtbot.waitUntil(lambda: w.frameGeometry().size() == QSize(520, 400))
+    w.table_widget.selectRow([r[0] for r in table_cells(w)].index("0x0A0"))
+    content = w.graph.content()
+    plan = w.graph.plan(w.graph.width(), w.graph.height())
+    assert len(content.points) == 499 > plan.plot[2]
+    assert plan.columns and not plan.points
+
+
+def test_windows_are_modeless_fr020(main_window, dialogs, wait_window):
+    a = open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
+    main_window.actions["jitter"].trigger()
+    b = wait_window(main_window, "jitter")
+    assert a.isVisible() and b.isVisible()
+    assert not a.isModal() and not b.isModal()
+    a.table_widget.selectRow(3)
+    b.table_widget.selectRow(2)
+    assert (a.selected_row(), b.selected_row()) == (3, 2)

@@ -176,4 +176,28 @@ class TxWaitWindow(ListNoteGraphWindow):
         self._show_histogram(index, self.analysis.rows[index].stats)
 
 
-WINDOWS = {"txwait": TxWaitWindow}
+class LatencyWindow(ListNoteGraphWindow):
+    """受信完了時間（MFC CLatencyDlg）。"""
+
+    widths = (90, 90, 80, 100, 100, 100, 100)
+    numeric_from = 2
+
+    def show_row(self, index):
+        self._show_histogram(index, self.analysis.rows[index].stats)
+
+
+class JitterWindow(ListNoteGraphWindow):
+    """送信ジッター（MFC CJitterDlg）。グラフは選んだ CAN ID のずれの時系列。"""
+
+    widths = (90, 90, 90, 80, 100, 100, 110)
+    numeric_from = 2
+
+    def show_row(self, index):
+        row = self.analysis.rows[index]
+        if row.count == 0:
+            self.graph.set_no_data(texts.IDS_ANALYSIS_NO_DATA)
+        else:
+            self.graph.set_deviation(row.points, texts.IDS_BUS_AXIS_X, texts.IDS_JIT_AXIS_Y)
+
+
+WINDOWS = {"txwait": TxWaitWindow, "latency": LatencyWindow, "jitter": JitterWindow}
