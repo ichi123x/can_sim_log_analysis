@@ -166,7 +166,7 @@ description: "CANログ解析ツールの画面 の実装タスク"
 - [ ] T031 [P] `tests/unit/test_no_gui_import.py` に、`src/can_log_analysis/` のどのファイルも `can_log_analysis_gui` を import しないことを足す（逆向きの依存の禁止。憲章 原則 II）
 - [ ] T032 [P] `CLAUDE.md` を更新する: 機能 002（画面 `src/can_log_analysis_gui/`）の追加、起動方法（`can-log-analysis-gui [PROJECT]`、`can_log_analysis_gui.bat`）、画面のテスト（`pytest tests/gui`、offscreen）、`pip install -e ".[dev]"` で PySide6 も入ること
 - [ ] T033 `specs/002-analysis-gui/quickstart.md` の 1・2・4・5 を実行する（2 は起動して目で見る代わりに、offscreen ではなく実際の画面で `can-log-analysis-gui tests\data\sample_vehicle_16ecu\sample_vehicle_16ecu.canprj` を起動できることを確かめ、スクリーンショットを撮れれば撮る）。期待どおりでなければ quickstart.md かコードを直す
-- [ ] T034 `specs/002-analysis-gui/VERIFIED.md` を記入欄（確認日、確認者、確認した画面 2 つ以上、MFC 版のビルド（`C:\work\claude\can_simulator` の `git rev-parse --short HEAD`）、表・タイトル・メニュー・グラフの軸の範囲と目盛りの結果、比べた条件（画面の拡大率、両方とも初期サイズのままか））だけで作り、利用者（I.H）に MFC 版との見比べを依頼する（SC-002）。依頼文には「目盛りの数はグラフの横幅で決まるので、両方とも開いたときの大きさのまま、同じ拡大率の画面で比べる」と書く。記入されるまで SC-002 は完了としない
+- [X] T034 `specs/002-analysis-gui/VERIFIED.md` を記入欄（確認日、確認者、確認した画面 2 つ以上、MFC 版のビルド（`C:\work\claude\can_simulator` の `git rev-parse --short HEAD`）、表・タイトル・メニュー・グラフの軸の範囲と目盛りの結果、比べた条件（画面の拡大率、両方とも初期サイズのままか））だけで作り、利用者（I.H）に MFC 版との見比べを依頼する（SC-002）。依頼文には「目盛りの数はグラフの横幅で決まるので、両方とも開いたときの大きさのまま、同じ拡大率の画面で比べる」と書く。記入されるまで SC-002 は完了としない
 - [ ] T035 `pytest`（機能 001 と 002、golden を含む）が全件成功し、`VERIFIED.md` が記入されていることを確かめる（憲章「品質ゲート」）。未記入なら、その旨を利用者に伝えて完了としない
 
 ---
