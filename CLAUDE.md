@@ -12,8 +12,13 @@ Spec-Driven Development (SDD) で開発している。
 
 - 憲章: `.specify/memory/constitution.md`（v1.0.0）。最重要は原則 I「MFC 版との数値互換」: 表のセルが MFC 版と文字列一致すること。
 - 機能 001（`specs/001-log-analysis-core-cli/`）: 画面なしの解析コア `src/can_log_analysis/` とコマンドライン `can-log-analysis`。
-  受信完了時間・送信待ち時間・送信ジッタ・CAN バス負荷の 4 表を MFC 版と同じ書式の CSV で出す。画面（PySide6）は次の機能。
+  受信完了時間・送信待ち時間・送信ジッタ・CAN バス負荷の 4 表を MFC 版と同じ書式の CSV で出す。
+- 機能 002（`specs/002-analysis-gui/`）: PySide6 の画面 `src/can_log_analysis_gui/`。MFC と同じ「ファイル」「解析」メニュー、
+  4 つの解析画面（表・注記・グラフ）、「解析中」ウィンドウ。画面 → 解析コアの一方向の依存（コアは Qt も画面も import しない。
+  `tests/unit/test_no_gui_import.py`）。グラフの目盛り・間引きはコアの `plot.py`（MFC と同じ式）。
+  MFC 版との目視確認は `specs/002-analysis-gui/VERIFIED.md`（4 画面確認済み。見た目の細かな差は合わせない方針）。
 - `reference/mfc/` は MFC 版のソース（正解の資料）。**変更もコピーもしない**。`Doc/` は仕様書。
+  画面の文言・フォント・寸法・色は `MFCApplication1.rc` と `AnalysisDlg.cpp` から取る（テストで .rc と照合している）。
 - `tools/mfc_golden/` は `reference/mfc/CanSim/LogAnalysis.cpp` をそのままビルドして正解 CSV（`tests/data/*/golden/`）を作る C++ プログラム。
   golden テストが合わないときは Python 側を直し、正解 CSV は直さない。
 - `tests/data/` はバイト単位で比較するので `.gitattributes` で改行変換を止めている（正解 CSV は UTF-8・LF、シミュレータのログは CRLF）。
@@ -23,14 +28,19 @@ Spec-Driven Development (SDD) で開発している。
 ```powershell
 py -3.12 -m venv .venv               # 初回だけ（Python 3.11 以上）
 .venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
-pytest                               # unit + integration（golden を含む）
+pip install -e ".[dev]"               # PySide6・pytest-qt・pytest-timeout も入る
+pytest                               # unit + integration + gui（golden を含む。画面は offscreen で動く）
+pytest tests/gui                     # 画面のテストだけ（pytest-qt）
 pytest tests/unit/test_jitter.py -k period   # 1 ファイル・一部だけ
-pytest -m perf -s                    # 300 万行の性能テスト（時間とピークメモリ。1 分弱）
-can-log-analysis tests\data\as001\as001.canprj -a txwait   # python -m can_log_analysis でも同じ
+pytest -m perf -s                    # 300 万行の性能テスト（CLI の時間・メモリ、画面の応答・中断。1 分弱）
+can-log-analysis tests\data\as001\as001.canprj -a txwait   # CLI。python -m can_log_analysis でも同じ
+can-log-analysis-gui tests\data\sample_vehicle_16ecu\sample_vehicle_16ecu.canprj   # 画面。python -m can_log_analysis_gui でも同じ
 tools\mfc_golden\build.ps1           # 正解生成プログラムのビルド（Visual Studio 2022 以降が必要）
 ```
 
+- 画面はエクスプローラーからリポジトリ直下の `can_log_analysis_gui.bat` をダブルクリックしても起動できる（.canprj をドロップしてもよい）。
+- テストは 1 件 120 秒で打ち切る（pytest-timeout）。画面のテストで固まったら、モーダルのダイアログかスレッドの待ち合わせを疑う。
+  メッセージとファイル選択は `can_log_analysis_gui.app.show_message`／`ask_project_path` を通し、テストでは `dialogs` fixture で差し替える。
 - Bash から `.cmd`／`.bat` を直接実行しない（`build.ps1` は PowerShell から）。
 - 書くファイルは UTF-8（BOM なし）・LF。Windows PowerShell 5.1 で .ps1 に日本語を書くと読めないので、.ps1 は ASCII にする。
 

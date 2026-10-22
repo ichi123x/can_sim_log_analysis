@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 PACKAGE = Path(__file__).parents[2] / "src" / "can_log_analysis"
-GUI = {"PySide6", "PySide2", "PyQt5", "PyQt6", "tkinter", "wx"}
+GUI = {"PySide6", "PySide2", "PyQt5", "PyQt6", "tkinter", "wx", "can_log_analysis_gui"}  # nor the screen package
 NOT_IN_THIS_FEATURE = {"numpy", "matplotlib", "pandas"}
 
 

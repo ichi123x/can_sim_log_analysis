@@ -93,6 +93,13 @@ def test_escape_closes_enter_does_not_fr023(qtbot, main_window, dialogs, wait_wi
     qtbot.waitUntil(lambda: "txwait" not in main_window.windows)
 
 
+def test_escape_from_the_list_closes_even_if_the_window_is_not_active_fr023(qtbot, main_window, dialogs, wait_window):
+    # found on the real screen: a window-shortcut did not work while the window was inactive
+    w = open_and_run(main_window, dialogs, wait_window, SAMPLE, "latency")
+    qtbot.keyClick(w.table_widget, Qt.Key_Escape)
+    qtbot.waitUntil(lambda: "latency" not in main_window.windows)
+
+
 def test_opening_another_project_closes_the_windows_fr005(qtbot, main_window, dialogs, wait_window):
     open_and_run(main_window, dialogs, wait_window, SAMPLE, "txwait")
     dialogs.project_path = AS001

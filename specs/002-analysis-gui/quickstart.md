@@ -11,7 +11,7 @@
 
 ```powershell
 .venv\Scripts\Activate.ps1
-pip install -e ".[dev]"      # dev に PySide6 と pytest-qt が入る
+pip install -e ".[dev]"      # dev に PySide6・pytest-qt・pytest-timeout が入る
 ```
 
 ## 1. テスト
@@ -47,7 +47,16 @@ MFC 版（`C:\work\claude\can_simulator`）で同じプロジェクトを開き�
 `pytest -m perf` が作る 300 万行のログ（または同じ方法で作ったもの）を開いて解析を選ぶ。
 期待: 0.5 秒後に「解析中」ウィンドウ。読み込み中に「中断」→ 2 秒以内に閉じ、解析画面は出ない。最後まで待てば 1 分以内に解析画面が開く。
 
+2026-10-23 の実測（開発 PC、実際の画面）: 「解析中」ウィンドウは 0.6〜0.7 秒で表示、中断は 0.06 秒で閉じる、最後まで待つと 8.1 秒で開く（読み込み 7.0 秒）。
+
+> 自動化して確かめるときの注意: 待ち合わせに `QTest.qWait` を使うと、PySide6 では待っている間も GIL を握ったままになり、
+> 解析のスレッドが 3 倍ほど遅くなる（読み込み 21 秒）。`QEventLoop` を回して待つ（pytest-qt の `qtbot.waitUntil` もこの方式）。
+> 実際のアプリは `app.exec()` で待つので影響しない。
+
 ## 5. メッセージ（US5）
+
+自動テスト `tests/gui/test_messages.py` で、次の 4 つの文言と、出たあとの状態を確かめている（メッセージボックスはテストで差し替える）。
+実際の画面で確かめるときは次のとおり操作する。
 
 - 起動直後に「解析 > 送信待ち時間」→ IDS_LOG_NONE_NOPROJECT。
 - `tests\data\errors\no_log.canprj` を開いて解析 → IDS_LOG_NONE。

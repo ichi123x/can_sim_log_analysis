@@ -5,7 +5,7 @@
 """
 
 from PySide6.QtCore import QRect, QSize, Qt, Signal
-from PySide6.QtGui import QFont, QFontMetrics, QKeySequence, QShortcut
+from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QLabel, QTableWidget, QTableWidgetItem, QWidget
 
 from can_log_analysis.stats import make_histogram
@@ -90,7 +90,6 @@ class AnalysisWindow(QWidget):
         self.setWindowTitle(table.title)
         self.table_widget = self._make_table(table)
         self.graph = GraphWidget(self)
-        QShortcut(QKeySequence(Qt.Key_Escape), self, self.close)
         self._placed = False
 
     def _make_table(self, table) -> QTableWidget:
@@ -139,8 +138,14 @@ class AnalysisWindow(QWidget):
             self.move(place_window(self.initial_size, owner, work).topLeft())
 
     def keyPressEvent(self, event):
+        # The key events of the list and the graph come up to here when they do not use them.
+        # (A QShortcut only works while the window is active; MFC handles Esc as a key of the dialog.)
         if event.key() in (Qt.Key_Return, Qt.Key_Enter):
             event.accept()  # Enter does not close the window (MFC OnOK)
+            return
+        if event.key() == Qt.Key_Escape:
+            event.accept()
+            self.close()  # MFC OnCancel
             return
         super().keyPressEvent(event)
 
