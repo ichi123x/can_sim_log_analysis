@@ -4,6 +4,7 @@
 計算中は MFC と同じく計算が終わってから結果を捨てる。
 """
 
+import gc
 import threading
 
 from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
@@ -115,6 +116,18 @@ class AnalysisJob(QObject):
             return not self._cancel
 
     def _run(self):
+        # The analyses make hundreds of thousands of small objects (Transmission, JitterPoint). The cyclic garbage
+        # collector then runs thousands of times and each full pass holds the GIL for up to 0.14 s, which stops the
+        # GUI thread. Reference counting still frees them, so it is paused for the job only (002 research R-3).
+        collecting = gc.isenabled()
+        gc.disable()
+        try:
+            return self._read_and_analyze()
+        finally:
+            if collecting:
+                gc.enable()
+
+    def _read_and_analyze(self):
         try:
             records = read_log_records(self.project.log_path, progress=self._progress)
         except LogReadCancelled:

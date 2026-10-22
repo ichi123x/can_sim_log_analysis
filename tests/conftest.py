@@ -101,3 +101,37 @@ def wait_window(qtbot):
         return window.windows[kind]
 
     return wait
+
+
+# ---- 300 万行のログ（性能テスト用。機能 001 の tests/perf と機能 002 の tests/gui/test_gui_perf.py で共通） ----
+
+LARGE_TIME_COLUMNS = ("Timestamp_us", "Tx_Request", "Tx_Start", "Tx_End", "Rx_Start", "Rx_End", "Rx_Process")
+
+
+def make_large_project(folder, rows=3_000_000):
+    """sample_vehicle_16ecu（16 ECU・31 ID、5 秒分）を時刻を 5 秒ずつずらして繰り返し、rows 行のログを作る。.canprj のパスを返す。"""
+    sample = DATA_DIR / "sample_vehicle_16ecu" / "sample_vehicle_16ecu.canprj.log.csv"
+    lines = sample.read_text(encoding="utf-8").splitlines()
+    header = lines[0]
+    names = header.split(",")
+    time_index = [names.index(n) for n in LARGE_TIME_COLUMNS]
+    sample_rows = [line.split(",") for line in lines[1:] if line]
+    project = Path(folder) / "large.canprj"
+    project.write_text("[Project]\nEcuCount=16\n", encoding="utf-8")
+    written = 0
+    with open(str(project) + ".log.csv", "w", encoding="utf-8", newline="\n") as f:
+        f.write(header + "\n")
+        repeat = 0
+        while written < rows:
+            shift = repeat * 5_000_000
+            out = []
+            for cells in sample_rows[:rows - written]:
+                cells = list(cells)
+                for i in time_index:
+                    if cells[i]:
+                        cells[i] = str(int(cells[i]) + shift)
+                out.append(",".join(cells))
+            f.write("\n".join(out) + "\n")
+            written += len(out)
+            repeat += 1
+    return project

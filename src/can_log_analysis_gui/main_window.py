@@ -1,16 +1,18 @@
 """メインウィンドウ（MFC MFCApplication1Dlg のメニュー・RunAnalysis・CloseResultWindows。contracts/gui.md）。"""
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QAction, QKeySequence
-from PySide6.QtWidgets import QMainWindow
+from PySide6.QtWidgets import QApplication, QMainWindow
 
 from can_log_analysis.project import open_project, read_project_contents
 from can_log_analysis_gui import texts
 from can_log_analysis_gui.analysis_window import MIN_SIZE, WINDOWS, apply_frame_size
 from can_log_analysis_gui.job import AnalysisJob
+from can_log_analysis_gui.progress_dialog import ProgressDialog
 from can_log_analysis_gui.project_view import ProjectView
 
 INITIAL_SIZE = QSize(900, 600)
+PROGRESS_AFTER_MS = 500  # MFC RunAnalysis: job.wait_for(500 ms) before CAnalysisProgressDlg
 
 
 class MainWindow(QMainWindow):
@@ -21,6 +23,11 @@ class MainWindow(QMainWindow):
         self.contents = None
         self.windows = {}  # kind -> AnalysisWindow (0 or 1 per kind)
         self.job = None
+        self.progress_dialog = None
+        self.progress_dialogs_shown = 0
+        self._progress_timer = QTimer(self)
+        self._progress_timer.setSingleShot(True)
+        self._progress_timer.timeout.connect(self._show_progress)
         self._last_dir = ""
         self._sized = False
         self.actions = {}
@@ -95,15 +102,58 @@ class MainWindow(QMainWindow):
             return
         self.job = AnalysisJob(self.project, kind, self)
         self.job.finished.connect(self._on_job_finished)
+        self._begin_wait()
         self.job.start()
+        self._progress_timer.start(PROGRESS_AFTER_MS)
+
+    def _begin_wait(self):
+        # MFC: CWaitCursor and the main thread waiting; nothing else can be done meanwhile
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        self.setEnabled(False)  # also disables the analysis windows (children of this window)
+
+    def _end_wait(self):
+        self._progress_timer.stop()
+        if self.progress_dialog is not None:
+            self.progress_dialog.finish()
+            self.progress_dialog = None
+        self.setEnabled(True)
+        QApplication.restoreOverrideCursor()
+
+    def _show_progress(self):
+        if self.job is None:
+            return
+        # no parent: a child of this (disabled) window would be disabled too; centred on this window instead
+        dialog = ProgressDialog(self.job)
+        dialog.setWindowModality(Qt.ApplicationModal)
+        dialog.adjustSize()
+        rect = dialog.frameGeometry()
+        rect.moveCenter(self.frameGeometry().center())
+        dialog.move(rect.topLeft())
+        self.progress_dialog = dialog
+        self.progress_dialogs_shown += 1
+        dialog.show()
 
     def _on_job_finished(self, state, result):
         job = self.job
+        if job is None or self.sender() is not job:
+            return  # a job given up when the window was closed
         job.wait()
         self.job = None
+        self._end_wait()
         if state == "done":
             analysis, table = result
             self._open_window(job.kind, analysis, table)
+
+    def closeEvent(self, event):
+        """MFC と同じく解析中は閉じられない（入力を受け付けない）が、閉じる要求が届いたら中断して止まるのを待つ（FR-016）。"""
+        job = self.job
+        if job is not None:
+            job.cancel()
+            job.wait()  # at most one calculation (about 3 s for 3 million rows)
+            self.job = None
+            self._end_wait()
+        self.close_analysis_windows()  # MFC OnDestroy: CloseResultWindows
+        super().closeEvent(event)
 
     def _open_window(self, kind, analysis, table):
         window = WINDOWS[kind](kind, analysis, table, self)

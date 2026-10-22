@@ -11,45 +11,18 @@ from pathlib import Path
 
 import pytest
 
-from conftest import DATA_DIR
+from conftest import make_large_project
 
 pytestmark = pytest.mark.perf
 
 ROWS = 3_000_000
 TIME_LIMIT_S = 60.0
 MEMORY_LIMIT = 1024 ** 3
-SAMPLE = DATA_DIR / "sample_vehicle_16ecu" / "sample_vehicle_16ecu.canprj.log.csv"
-SHIFT_US = 5_000_000  # the sample covers 5 s
-TIME_COLUMNS = ("Timestamp_us", "Tx_Request", "Tx_Start", "Tx_End", "Rx_Start", "Rx_End", "Rx_Process")
 
 
 @pytest.fixture(scope="module")
 def large_project(tmp_path_factory):
-    lines = SAMPLE.read_text(encoding="utf-8").splitlines()
-    header = lines[0]
-    names = header.split(",")
-    time_index = [names.index(n) for n in TIME_COLUMNS]
-    rows = [line.split(",") for line in lines[1:] if line]
-    folder = tmp_path_factory.mktemp("perf")
-    project = folder / "large.canprj"
-    project.write_text("[Project]\nEcuCount=16\n", encoding="utf-8")
-    written = 0
-    with open(str(project) + ".log.csv", "w", encoding="utf-8", newline="\n") as f:
-        f.write(header + "\n")
-        repeat = 0
-        while written < ROWS:
-            shift = repeat * SHIFT_US
-            out = []
-            for cells in rows[:ROWS - written]:
-                cells = list(cells)
-                for i in time_index:
-                    if cells[i]:
-                        cells[i] = str(int(cells[i]) + shift)
-                out.append(",".join(cells))
-            f.write("\n".join(out) + "\n")
-            written += len(out)
-            repeat += 1
-    return project
+    return make_large_project(tmp_path_factory.mktemp("perf"), ROWS)
 
 
 def test_time_within_a_minute(large_project, tmp_path):

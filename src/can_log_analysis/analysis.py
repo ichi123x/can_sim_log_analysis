@@ -26,26 +26,44 @@ def collect_transmissions(records: LogRecords) -> tuple[list[Transmission], int]
     1 回にまとめ、その順に並べる。返り値は (送信, OVERWRITE の行数)。MFC CollectTransmissions。
 
     同じキーの行が複数あれば最初の行を残す（research.md R-5）。
+
+    MFC と同じく CAN ID ごとに分けて集める。ログは時刻順なので、ID ごとの送信はふつう既に (送信開始, 送信ノード) 順で、
+    並べ替えずに済む。並んでいない ID だけ並べ替える。全体を 1 回で並べ替えると、300 万行で 0.2 秒以上 GIL を
+    握ったままになり、画面（機能 002）が止まるため（002 research R-3 の追記）。
     """
     overwrites = 0
-    seen = {}
+    buckets: dict[int, dict[tuple[int, int], int]] = {}  # can_id -> (tx_start, tx_node) -> tx_request, in log order
     status = records.status
+    tx_request, tx_start, tx_node = records.tx_request, records.tx_start, records.tx_node
     for i, can_id in enumerate(records.can_id):
         if status[i] == OVERWRITE:
             overwrites += 1
             continue
-        request = records.tx_request[i]
-        start = records.tx_start[i]
+        request = tx_request[i]
+        start = tx_start[i]
         if request < 0 or start < 0:
             continue
-        key = (can_id, start, records.tx_node[i])
-        if key not in seen:
-            seen[key] = request
-    transmissions = [
-        Transmission(can_id=can_id, tx_node=node, tx_request=request, tx_start=start)
-        for (can_id, start, node), request in sorted(seen.items())
-    ]
+        bucket = buckets.get(can_id)
+        if bucket is None:
+            bucket = buckets[can_id] = {}
+        key = (start, tx_node[i])
+        if key not in bucket:
+            bucket[key] = request
+    transmissions = []
+    for can_id in sorted(buckets):
+        items = list(buckets.pop(can_id).items())  # pop: each bucket is freed on its own, not all at the end
+        if any(items[k][0] > items[k + 1][0] for k in range(len(items) - 1)):
+            items.sort()
+        transmissions.extend(Transmission(can_id=can_id, tx_node=node, tx_request=request, tx_start=start)
+                             for (start, node), request in items)
+        _release(items)
     return transmissions, overwrites
+
+
+def _release(objects: list, step: int = 50_000):
+    """大きなリストを末尾から少しずつ空にする。一度に解放すると 75 万件で 0.1 秒 GIL を握り続けるため（画面の応答）。"""
+    while objects:
+        del objects[-step:]
 
 
 # ---- 受信完了時間 ----
@@ -122,6 +140,7 @@ def analyze_tx_wait(records: LogRecords) -> TxWaitAnalysis:
     rows = [TxWaitRow(is_all=True, stats=compute_stats(every))]
     for can_id, node, values in ids:
         rows.append(TxWaitRow(can_id=can_id, tx_node=node, stats=compute_stats(values)))
+    _release(transmissions)
     return TxWaitAnalysis(rows=rows, overwrite_count=overwrites)
 
 # ---- 送信ジッタ ----
@@ -185,6 +204,7 @@ def analyze_jitter(records: LogRecords) -> JitterAnalysis:
             row.std_dev_us = math.sqrt(squares / row.count)  # population, as the summary CSV
         rows.append(row)
         begin = end
+    _release(transmissions)
     return JitterAnalysis(rows=rows)
 
 # ---- CAN バス負荷 ----
@@ -232,6 +252,8 @@ def analyze_bus_load(records: LogRecords) -> BusLoadAnalysis:
         transmissions.append((tx_node[i], start, end))
         last_end = max(last_end, end)
     result.transmission_count = len(transmissions)
+    while seen:  # free the set bit by bit (one free of 750k keys keeps the GIL for 0.1 s)
+        seen.pop()
 
     section = result.section_us
     result.range_us = section if last_end <= 0 else ((last_end + section - 1) // section) * section
@@ -252,6 +274,7 @@ def analyze_bus_load(records: LogRecords) -> BusLoadAnalysis:
             e = ecus[node] = EcuBusUsage(node=node)
         e.frame_count += 1
         e.busy_us += duration
+    _release(transmissions)
 
     for i, b in enumerate(busy):
         pct = 100.0 * float(b) / float(section)
