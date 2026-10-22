@@ -16,7 +16,7 @@
 | 3 | 列見出し |
 | 4 以降 | 表の行（0 行のこともある） |
 
-- 標準出力に複数の表を出すときは、表の間に空行を 1 行入れる。順は latency、busload、txwait、jitter。
+- 標準出力に複数の表を出すときは、表の間に空行を 1 行入れる。順は txwait、latency、jitter、busload（MFC の「解析」メニューの順。contracts/cli.md）。
 - ファイルに出すときの名前は `latency.csv`、`busload.csv`、`txwait.csv`、`jitter.csv`。
 
 ## 文言（MFC `MFCApplication1.rc` の文字列テーブルからそのまま）

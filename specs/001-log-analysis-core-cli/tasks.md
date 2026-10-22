@@ -95,7 +95,7 @@ description: "CANログ解析コアとコマンドライン の実装タスク"
 - [X] T026 [P] [US1] `tests/unit/test_latency.py` を書く: AS-001 の 3 行で、行が「全体」(件数 3、最小 246、平均 330.0、最大 498、95% 498)、(1,5)=498、(3,1)=246、(3,5)=246 の順（AS-001、FR-020、FR-021）。OVERWRITE 2 行を含むログで `overwrite_count == 2` かつ値に入らない（FR-010）。Rx_Node 0、Rx_End −1、Tx_Request −1 の行は外れる。ヘッダだけのログで「全体」の行だけ（件数 0、値はすべて 0）
 - [X] T027 [P] [US1] `tests/unit/test_tx_wait.py` を書く: AS-001 で「全体」(2, 0, 126.0, 252, 252)、0x080(ECU 03: 1, 0, 0.0, 0, 0)、0x100(ECU 01: 1, 252, 252.0, 252, 252)（AS-001、FR-023、FR-024）。受信ノード 3 つに並ぶ送信が 1 件に数えられる。各 CAN ID の送信 ECU は「送信開始が最も早い送信の送信ノード」。送信開始が送信要求より前なら負の値のまま。OVERWRITE の数（FR-025）
 - [X] T028 [P] [US1] `tests/unit/test_tables.py` に latency と txwait の表のテストを足す: 表題（`受信完了時間 - <P>`、`送信待ち時間 - <P>`）、注記（OVERWRITE の件数入り）、列見出し、全体の行の 2 列目が空欄、セルの書式（contracts/table-csv.md「行の作り方」）
-- [X] T029 [P] [US1] `tests/integration/test_cli.py` を書く: `main(["tests/data/as001/as001.canprj", "-a", "txwait", "-a", "latency"])` の標準出力（capsys）が latency → txwait の順で、`tests/data/as001/golden/latency.csv` と `txwait.csv` の内容を空行 1 行でつないだ文字列と等しい。`-o <tmp>` を付けると `<tmp>/latency.csv` と `<tmp>/txwait.csv` だけができ、終了コード 0。`python -m can_log_analysis` を subprocess で呼んでも同じ出力（UTF-8 で読む）
+- [X] T029 [P] [US1] `tests/integration/test_cli.py` を書く: `main(["tests/data/as001/as001.canprj", "-a", "txwait", "-a", "latency"])` の標準出力（capsys）が txwait → latency の順（2026-10-22 修正。MFC の「解析」メニューの順）で、`tests/data/as001/golden/txwait.csv` と `latency.csv` の内容を空行 1 行でつないだ文字列と等しい。`-o <tmp>` を付けると `<tmp>/latency.csv` と `<tmp>/txwait.csv` だけができ、終了コード 0。`python -m can_log_analysis` を subprocess で呼んでも同じ出力（UTF-8 で読む）
 - [X] T030 [P] [US1] `tests/integration/test_golden.py` を書く: ログ（`as001`、`sample_vehicle_16ecu`）と kind（まず `latency`、`txwait`）でパラメータ化し、CLI を `-o tmp_path` で実行して、出力ファイルと `tests/data/<ログ>/golden/<kind>.csv` を UTF-8 の文字列として読み、`==` で比べる（改行の正規化や空白の除去はしない）。違うときは最初に違う行を表示する（SC-001、SC-002）
 
 ### Implementation for User Story 1
@@ -104,7 +104,7 @@ description: "CANログ解析コアとコマンドライン の実装タスク"
 - [X] T032 [US1] `src/can_log_analysis/analysis.py` に `LatencyRow`、`LatencyAnalysis` と `analyze_latency(records)` を実装する（MFC `AnalyzeLatency`）: OVERWRITE を数えて除き、`rx_node <= 0 or rx_end < 0 or tx_request < 0` の行を除き、`rx_end - tx_request` を全体と (tx_node, rx_node) ごとに `array('q')` へ集める（`list` にしない。research.md R-3）。rows は「[0] = 全体、続いて (tx_node, rx_node) 昇順」。T026 を通す
 - [X] T033 [US1] `src/can_log_analysis/analysis.py` に `TxWaitRow`、`TxWaitAnalysis` と `analyze_tx_wait(records)` を実装する（MFC `AnalyzeTxWait`）: `collect_transmissions` の結果から `tx_start - tx_request` を全体と can_id ごとに `array('q')` へ集める（research.md R-3）。rows は「[0] = 全体、続いて can_id 昇順」、行の tx_node はその ID の最初の送信のもの。T027 を通す
 - [X] T034 [US1] `src/can_log_analysis/tables.py` に `latency_table(a, project_name)` と `tx_wait_table(a, project_name)` を実装する（contracts/table-csv.md「行の作り方」、MFC `CLatencyDlg::CreateContent`、`CTxWaitDlg::CreateContent`）。T028 を通す
-- [X] T035 [US1] `src/can_log_analysis/cli.py` を実装する（contracts/cli.md）: 引数 PROJECT、`--analysis/-a`（`all`・`latency`・`busload`・`txwait`・`jitter`、複数可、既定 all）、`--output-dir/-o`。出力順は latency → busload → txwait → jitter（この Phase では latency と txwait だけを出し、busload・jitter は US2・US3 で足す）。`sys.stdout.reconfigure(encoding="utf-8", newline="\n")`、`sys.stderr` も UTF-8。すべての表を作り終えてから書き出す。`-o` のファイルは `open(path, "w", encoding="utf-8", newline="\n")`、ディレクトリがなければ作る。成功 0。T029 を通す
+- [X] T035 [US1] `src/can_log_analysis/cli.py` を実装する（contracts/cli.md）: 引数 PROJECT、`--analysis/-a`（`all`・`latency`・`busload`・`txwait`・`jitter`、複数可、既定 all）、`--output-dir/-o`。出力順は txwait → latency → jitter → busload（2026-10-22 修正。MFC の「解析」メニューの順。この Phase では latency と txwait だけを出し、busload・jitter は US2・US3 で足す）。`sys.stdout.reconfigure(encoding="utf-8", newline="\n")`、`sys.stderr` も UTF-8。すべての表を作り終えてから書き出す。`-o` のファイルは `open(path, "w", encoding="utf-8", newline="\n")`、ディレクトリがなければ作る。成功 0。T029 を通す
 - [X] T036 [US1] T030 の golden テスト（latency、txwait）を通す。違いがあれば research.md R-4 の計算順・丸めを見直し、正解 CSV は直さない（正解は MFC のコード）
 
 **Checkpoint**: US1 単独で使える（MVP）。AS-001 と sample_vehicle_16ecu の 2 表が MFC と一致
@@ -144,7 +144,7 @@ description: "CANログ解析コアとコマンドライン の実装タスク"
 
 - [X] T044 [P] [US3] `tests/unit/test_bus_load.py` を書く（FR-031〜FR-035、AR-080〜AR-083）: AS-001 で range_us 10010000、transmission_count 2、ecus が ECU 01（frame_count 1）と ECU 03（frame_count 1）。9990〜10010 µs の 1 送信で section_pct[0] と [1] にそれぞれ 10 µs 分（0.1）。送信なし（ヘッダだけ）で range_us 10000、average_pct 0.0、max_pct 0.0、max_section 0、ecus 空。Tx_End ≦ Tx_Start と Tx_Start < 0 の行は除き、Tx_Request −1 の行は含む（CollectTransmissions と条件が違う。research.md R-5）。同じ最大値の区間が 2 つあれば最初のほう。重複のまとめはキー (tx_node, can_id, tx_start) で最初の行の tx_end を使う。負荷率は `100.0 * busy / section_us`、使用率は `100.0 * busy_us / range_us` の順で計算
 - [X] T045 [P] [US3] `tests/unit/test_tables.py` に busload の表のテストを足す: 表題 `CAN バス負荷 - <P>`、2 行目の要約 `平均負荷 <A>%　最大負荷 <M>%（<S>〜<E> ms）　範囲 0〜<R> ms（10 ms ごと）`（全角スペース U+3000、〜 U+301C、S = max_section × 10、E = (max_section + 1) × 10、R = range_us // 1000）、列 `ECU,送信フレーム数,使用率 (%)`
-- [X] T046 [P] [US3] `tests/integration/test_golden.py` と `tests/integration/test_cli.py` に kind `busload` を足す（-a busload、all のときの順序 latency → busload → txwait → jitter）
+- [X] T046 [P] [US3] `tests/integration/test_golden.py` と `tests/integration/test_cli.py` に kind `busload` を足す（-a busload、all のときの順序 txwait → latency → jitter → busload。2026-10-22 修正）
 
 ### Implementation for User Story 3
 

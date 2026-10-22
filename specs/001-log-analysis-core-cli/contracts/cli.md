@@ -10,12 +10,14 @@ python -m can_log_analysis PROJECT [--analysis KIND]... [--output-dir DIR]
 | 引数 | 必須 | 説明 |
 |---|---|---|
 | PROJECT | ○ | .canprj のパス。解析するログは `PROJECT + ".log.csv"`（FR-001） |
-| `--analysis KIND`, `-a KIND` | | `all`（既定）、`latency`、`busload`、`txwait`、`jitter`。複数回指定できる。`all` が 1 つでもあれば 4 つすべて |
+| `--analysis KIND`, `-a KIND` | | `all`（既定）、`txwait`、`latency`、`jitter`、`busload`。複数回指定できる。`all` が 1 つでもあれば 4 つすべて |
 | `--output-dir DIR`, `-o DIR` | | 指定すると表ごとに `DIR/<kind>.csv` に書く（DIR がなければ作る。同名ファイルは上書き）。指定しなければ標準出力 |
 | `--quiet`, `-q` | | 進捗を出さない（エラーメッセージは出す） |
 | `--help`, `-h` | | 使い方を出す |
 
-- 出力する表の順は、指定の順に関係なく latency → busload → txwait → jitter（MFC の「解析」メニューの順）。
+- 出力する表の順は、指定の順に関係なく txwait → latency → jitter → busload（MFC の「解析」メニューの順。
+  `MFCApplication1.rc` の IDR_MAINMENU: 送信待ち時間、受信完了時間、送信ジッター、区切り線、CAN バス負荷）。
+  2026-10-22 修正: 当初は元仕様 AR-090 の並び（latency → busload → txwait → jitter）にしていたが、MFC のリソースと違ったため MFC に合わせた。
 - 表の形式は [table-csv.md](table-csv.md)。
 
 ## 出力と終了コード

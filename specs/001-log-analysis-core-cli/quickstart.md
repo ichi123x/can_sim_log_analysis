@@ -33,7 +33,7 @@ pytest -m perf         # 300 万行の性能テスト（数分かかる。SC-003
 can-log-analysis tests\data\as001\as001.canprj -a txwait -a latency
 ```
 
-期待: [contracts/table-csv.md](contracts/table-csv.md) の「例」と同じ 2 つの表（latency → txwait の順）。
+期待: [contracts/table-csv.md](contracts/table-csv.md) の「例」と同じ 2 つの表（txwait → latency の順。MFC の「解析」メニューの順）。
 コンソールの文字化けは `chcp 65001` で直る（出力は常に UTF-8。research R-7）。
 
 ## 4. サンプルの 4 表をファイルに出して正解と比べる（SC-002）

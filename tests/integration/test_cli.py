@@ -16,9 +16,10 @@ def golden(kind):
 
 
 def test_stdout_in_menu_order_fr037(capsys):
-    assert main([str(AS001), "-a", "txwait", "-a", "latency"]) == 0
+    # the order of the MFC "解析" menu (MFCApplication1.rc IDR_MAINMENU), not the order of -a
+    assert main([str(AS001), "-a", "latency", "-a", "txwait"]) == 0
     out = capsys.readouterr()
-    assert out.out == golden("latency") + "\n" + golden("txwait")
+    assert out.out == golden("txwait") + "\n" + golden("latency")
     assert out.err == ""
 
 
@@ -36,14 +37,14 @@ def test_output_dir_writes_only_the_chosen_tables(tmp_path, capsys):
     assert capsys.readouterr().out == ""
 
 
-def test_jitter_comes_after_txwait(capsys):
-    assert main([str(AS001), "-a", "jitter", "-a", "txwait"]) == 0
-    assert capsys.readouterr().out == golden("txwait") + "\n" + golden("jitter")
+def test_jitter_comes_before_busload(capsys):
+    assert main([str(AS001), "-a", "busload", "-a", "jitter"]) == 0
+    assert capsys.readouterr().out == golden("jitter") + "\n" + golden("busload")
 
 
 def test_all_four_in_menu_order(capsys):
     assert main([str(AS001)]) == 0
-    expected = "\n".join(golden(kind) for kind in ("latency", "busload", "txwait", "jitter"))
+    expected = "\n".join(golden(kind) for kind in ("txwait", "latency", "jitter", "busload"))
     assert capsys.readouterr().out == expected
 
 
@@ -57,5 +58,5 @@ def test_python_m_gives_the_same_utf8_output():
         [sys.executable, "-m", "can_log_analysis", str(AS001), "-a", "latency", "-a", "txwait"],
         capture_output=True, check=False)
     assert result.returncode == 0
-    assert result.stdout.decode("utf-8") == golden("latency") + "\n" + golden("txwait")
+    assert result.stdout.decode("utf-8") == golden("txwait") + "\n" + golden("latency")
     assert b"\r" not in result.stdout

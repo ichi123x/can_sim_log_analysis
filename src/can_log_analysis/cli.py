@@ -13,14 +13,15 @@ from can_log_analysis.log_reader import read_log_records
 from can_log_analysis.project import open_project
 from can_log_analysis.tables import bus_load_table, jitter_table, latency_table, tx_wait_table, write_table_csv
 
-# The order of the MFC "解析" menu (AR-090)
+# The order of the MFC "解析" menu (MFCApplication1.rc IDR_MAINMENU): 送信待ち時間, 受信完了時間,
+# 送信ジッター, then CAN バス負荷 after a separator. AR-090 lists another order; MFC wins.
 _KINDS = {
-    "latency": lambda records, name: latency_table(analyze_latency(records), name),
-    "busload": lambda records, name: bus_load_table(analyze_bus_load(records), name),
     "txwait": lambda records, name: tx_wait_table(analyze_tx_wait(records), name),
+    "latency": lambda records, name: latency_table(analyze_latency(records), name),
     "jitter": lambda records, name: jitter_table(analyze_jitter(records), name),
+    "busload": lambda records, name: bus_load_table(analyze_bus_load(records), name),
 }
-_CHOICES = ["all", "latency", "busload", "txwait", "jitter"]
+_CHOICES = ["all", "txwait", "latency", "jitter", "busload"]
 
 # MFC IDS_ANALYZING_READ / IDS_ANALYZING_CALC (FR-042)
 _READING = "ログを読み込んでいます... "
@@ -85,7 +86,7 @@ def _parse(argv):
         description="CAN バスシミュレータ（MFC 版）のフレームログを解析し、MFC 版と同じ表を CSV で出す。")
     parser.add_argument("project", metavar="PROJECT", help=".canprj のパス（ログは PROJECT.log.csv）")
     parser.add_argument("-a", "--analysis", action="append", choices=_CHOICES, metavar="KIND",
-                        help="all（既定）、latency、busload、txwait、jitter。複数回指定できる")
+                        help="all（既定）、txwait、latency、jitter、busload。複数回指定できる")
     parser.add_argument("-o", "--output-dir", metavar="DIR", help="表ごとに DIR/<kind>.csv に書く。なければ標準出力")
     parser.add_argument("-q", "--quiet", action="store_true", help="進捗を出さない（エラーは出す）")
     return parser.parse_args(argv)

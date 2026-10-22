@@ -28,7 +28,7 @@ def fast(monkeypatch):
 
 
 def golden_all():
-    return "\n".join((GOLDEN / f"{k}.csv").read_text(encoding="utf-8") for k in ("latency", "busload", "txwait", "jitter"))
+    return "\n".join((GOLDEN / f"{k}.csv").read_text(encoding="utf-8") for k in ("txwait", "latency", "jitter", "busload"))
 
 
 def test_progress_after_half_a_second_fr042(capsys, slow):
